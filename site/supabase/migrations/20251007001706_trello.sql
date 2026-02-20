@@ -1,0 +1,3 @@
+-- Legacy Trello schema migration (retained for history compatibility).
+-- Tables created by this migration have been superseded by the Solom finance schema.
+-- This file is intentionally empty to maintain migration history consistency.
