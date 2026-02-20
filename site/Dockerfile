@@ -49,7 +49,7 @@ RUN groupadd --system nextjs && useradd --system --create-home --gid nextjs next
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/public ./public
 COPY --from=build /app/.next/static ./.next/static
-COPY site/supabase ./supabase
+COPY --from=build /app/supabase ./supabase
 
 USER nextjs
 
