@@ -93,7 +93,7 @@ function formatTime(time: string): string {
 
 export default async function EarningsPage() {
   // ─── Fetch with isolated error boundary ──────────────────────────────────
-  let grouped: Record<string, EarningsItem[]> = {};
+  const grouped: Record<string, EarningsItem[]> = {};
   let fetchError: string | null = null;
 
   try {

@@ -52,6 +52,7 @@ export default async function DashboardPage() {
       const quotes = await getQuotes(symbols);
 
       quotesMap = Object.fromEntries(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         quotes.map((q: any) => [
           q.symbol,
           { price: q.price ?? 0, name: q.name ?? q.symbol, changesPercentage: q.changesPercentage ?? 0 },
@@ -74,6 +75,7 @@ export default async function DashboardPage() {
   let marketSummary: Array<{ symbol: string; name: string; price: number; change: number }> = [];
   try {
     const actives = await getMarketActives();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     marketSummary = actives.slice(0, 6).map((stock: any) => ({
       symbol: stock.symbol,
       name: stock.name,

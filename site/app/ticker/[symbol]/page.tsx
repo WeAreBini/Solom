@@ -139,6 +139,7 @@ async function TickerContent({ symbol }: { symbol: string }) {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartData = (historicalData as any[]).map((h: any) => ({ time: h.date, value: h.close }));
   const companyName: string = quote.name || symbol;
   const currentPrice: number = quote.price ?? 0;
@@ -353,6 +354,7 @@ async function TickerContent({ symbol }: { symbol: string }) {
           {news && news.length > 0 ? (
             <Card>
               <CardContent className="p-0 divide-y">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {news.map((article: any, i: number) => (
                   <NewsCard
                     key={i}

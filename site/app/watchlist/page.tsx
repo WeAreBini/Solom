@@ -82,6 +82,7 @@ async function WatchlistContent() {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let quotes: Array<Record<string, any>> = [];
   try {
     quotes = await getQuotes(symbols);
@@ -89,6 +90,7 @@ async function WatchlistContent() {
     console.error('[WatchlistPage] FMP quotes error:', err);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const quoteMap = new Map<string, Record<string, any>>();
   for (const q of quotes) {
     if (q.symbol) quoteMap.set(q.symbol as string, q);
