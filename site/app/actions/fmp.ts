@@ -5,20 +5,19 @@
  * @ai-security Uses server-side environment variables to keep API keys secure.
  */
 
-const FMP_API_KEY = process.env.FMP_API_KEY;
 const BASE_URL = "https://financialmodelingprep.com/api/v3";
 
-if (!FMP_API_KEY) {
-  console.warn("FMP_API_KEY is not set in environment variables.");
+if (!process.env.FMP_API_KEY) {
+  console.warn("process.env.FMP_API_KEY is not set in environment variables.");
 }
 
 /**
  * Fetches real-time quote data for a given symbol.
  */
 export async function getQuote(symbol: string) {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
   
-  const res = await fetch(`${BASE_URL}/quote/${symbol}?apikey=${FMP_API_KEY}`, {
+  const res = await fetch(`${BASE_URL}/quote/${symbol}?apikey=${process.env.FMP_API_KEY}`, {
     next: { revalidate: 60 }, // Cache for 60 seconds
   });
   
@@ -37,11 +36,11 @@ export async function getQuote(symbol: string) {
  * Fetches real-time quote data for multiple symbols.
  */
 export async function getQuotes(symbols: string[]) {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
   if (!symbols.length) return [];
   
   const symbolString = symbols.join(',');
-  const res = await fetch(`${BASE_URL}/quote/${symbolString}?apikey=${FMP_API_KEY}`, {
+  const res = await fetch(`${BASE_URL}/quote/${symbolString}?apikey=${process.env.FMP_API_KEY}`, {
     next: { revalidate: 60 }, // Cache for 60 seconds
   });
   
@@ -60,9 +59,9 @@ export async function getQuotes(symbols: string[]) {
  * Fetches the most active stocks in the market.
  */
 export async function getMarketActives() {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
   
-  const res = await fetch(`${BASE_URL}/stock_market/actives?apikey=${FMP_API_KEY}`, {
+  const res = await fetch(`${BASE_URL}/stock_market/actives?apikey=${process.env.FMP_API_KEY}`, {
     next: { revalidate: 300 }, // Cache for 5 minutes
   });
   
@@ -81,9 +80,9 @@ export async function getMarketActives() {
  * Fetches the top market gainers.
  */
 export async function getMarketGainers() {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
   
-  const res = await fetch(`${BASE_URL}/stock_market/gainers?apikey=${FMP_API_KEY}`, {
+  const res = await fetch(`${BASE_URL}/stock_market/gainers?apikey=${process.env.FMP_API_KEY}`, {
     next: { revalidate: 300 }, // Cache for 5 minutes
   });
   
@@ -102,9 +101,9 @@ export async function getMarketGainers() {
  * Fetches the top market losers.
  */
 export async function getMarketLosers() {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
   
-  const res = await fetch(`${BASE_URL}/stock_market/losers?apikey=${FMP_API_KEY}`, {
+  const res = await fetch(`${BASE_URL}/stock_market/losers?apikey=${process.env.FMP_API_KEY}`, {
     next: { revalidate: 300 }, // Cache for 5 minutes
   });
   
@@ -124,9 +123,9 @@ export async function getMarketLosers() {
  * @param name The name of the economic indicator (e.g., GDP, CPI, unemploymentRate)
  */
 export async function getEconomicIndicator(name: string) {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
   
-  const res = await fetch(`https://financialmodelingprep.com/api/v4/economic?name=${name}&apikey=${FMP_API_KEY}`, {
+  const res = await fetch(`https://financialmodelingprep.com/api/v4/economic?name=${name}&apikey=${process.env.FMP_API_KEY}`, {
     next: { revalidate: 86400 }, // Cache for 24 hours since economic data updates infrequently
   });
   
@@ -147,10 +146,10 @@ export async function getEconomicIndicator(name: string) {
  * @returns Array of insider trade objects
  */
 export async function getInsiderTrades() {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
 
   const res = await fetch(
-    `https://financialmodelingprep.com/api/v4/insider-trading?transactionType=P-Purchase,S-Sale&limit=100&apikey=${FMP_API_KEY}`,
+    `https://financialmodelingprep.com/api/v4/insider-trading?transactionType=P-Purchase,S-Sale&limit=100&apikey=${process.env.FMP_API_KEY}`,
     { next: { revalidate: 900 } } // Cache 15 min
   );
 
@@ -178,10 +177,10 @@ export async function getInsiderTrades() {
  * @returns Array of senate trade objects
  */
 export async function getSenateTrades() {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
 
   const res = await fetch(
-    `https://financialmodelingprep.com/api/v4/senate-trading?limit=100&apikey=${FMP_API_KEY}`,
+    `https://financialmodelingprep.com/api/v4/senate-trading?limit=100&apikey=${process.env.FMP_API_KEY}`,
     { next: { revalidate: 3600 } } // Cache 1 hr
   );
 
@@ -209,10 +208,10 @@ export async function getSenateTrades() {
  * @param symbol Stock ticker (e.g. "AAPL")
  */
 export async function getInstitutionalHoldings(symbol: string) {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
 
   const res = await fetch(
-    `${BASE_URL}/institutional-holder/${symbol}?apikey=${FMP_API_KEY}`,
+    `${BASE_URL}/institutional-holder/${symbol}?apikey=${process.env.FMP_API_KEY}`,
     { next: { revalidate: 86400 } }
   );
 
@@ -234,10 +233,10 @@ export async function getInstitutionalHoldings(symbol: string) {
  * @param cik SEC CIK number (default: "0001067983" = Berkshire Hathaway)
  */
 export async function getForm13F(cik: string = "0001067983") {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
 
   const res = await fetch(
-    `${BASE_URL}/form-thirteen/${cik}?apikey=${FMP_API_KEY}`,
+    `${BASE_URL}/form-thirteen/${cik}?apikey=${process.env.FMP_API_KEY}`,
     { next: { revalidate: 86400 } }
   );
 
@@ -265,10 +264,10 @@ export async function getForm13F(cik: string = "0001067983") {
  * Fetches the list of top institutional holders tracked by FMP.
  */
 export async function getTopInstitutions() {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
 
   const res = await fetch(
-    `${BASE_URL}/institutional-holders-lists?apikey=${FMP_API_KEY}`,
+    `${BASE_URL}/institutional-holders-lists?apikey=${process.env.FMP_API_KEY}`,
     { next: { revalidate: 86400 } }
   );
 
@@ -284,10 +283,10 @@ export async function getTopInstitutions() {
  * @returns Array of house trade disclosure objects
  */
 export async function getHouseTrades() {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
 
   const res = await fetch(
-    `https://financialmodelingprep.com/api/v4/house-disclosure?limit=100&apikey=${FMP_API_KEY}`,
+    `https://financialmodelingprep.com/api/v4/house-disclosure?limit=100&apikey=${process.env.FMP_API_KEY}`,
     { next: { revalidate: 3600 } } // Cache 1 hr
   );
 
@@ -316,7 +315,7 @@ export async function getHouseTrades() {
  * @returns Array of upcoming earnings events
  */
 export async function getEarningsCalendar() {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
 
   const from = new Date();
   const to = new Date();
@@ -325,7 +324,7 @@ export async function getEarningsCalendar() {
   const fmt = (d: Date) => d.toISOString().split("T")[0];
 
   const res = await fetch(
-    `${BASE_URL}/earning_calendar?from=${fmt(from)}&to=${fmt(to)}&apikey=${FMP_API_KEY}`,
+    `${BASE_URL}/earning_calendar?from=${fmt(from)}&to=${fmt(to)}&apikey=${process.env.FMP_API_KEY}`,
     { next: { revalidate: 3600 } } // Cache 1 hr
   );
 
@@ -352,10 +351,10 @@ export async function getEarningsCalendar() {
  * @returns Array of news articles
  */
 export async function getMarketNews(limit: number = 10) {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
 
   const res = await fetch(
-    `${BASE_URL}/stock_news?limit=${limit}&apikey=${FMP_API_KEY}`,
+    `${BASE_URL}/stock_news?limit=${limit}&apikey=${process.env.FMP_API_KEY}`,
     { next: { revalidate: 900 } } // Cache 15 min
   );
 
@@ -391,9 +390,9 @@ export async function getCompanyProfile(symbol: string): Promise<{
   city: string;
   state: string;
 } | null> {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
 
-  const res = await fetch(`${BASE_URL}/profile/${symbol}?apikey=${FMP_API_KEY}`, {
+  const res = await fetch(`${BASE_URL}/profile/${symbol}?apikey=${process.env.FMP_API_KEY}`, {
     next: { revalidate: 86400 },
   });
 
@@ -435,10 +434,10 @@ export async function getTickerNews(
     text: string;
   }[]
 > {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
 
   const res = await fetch(
-    `${BASE_URL}/stock_news?tickers=${symbol}&limit=${limit}&apikey=${FMP_API_KEY}`,
+    `${BASE_URL}/stock_news?tickers=${symbol}&limit=${limit}&apikey=${process.env.FMP_API_KEY}`,
     { next: { revalidate: 900 } }
   );
 
@@ -469,10 +468,10 @@ export async function getAnalystRatings(symbol: string): Promise<{
   strongSell: number;
   date: string;
 } | null> {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
 
   const res = await fetch(
-    `${BASE_URL}/analyst-stock-recommendations/${symbol}?apikey=${FMP_API_KEY}`,
+    `${BASE_URL}/analyst-stock-recommendations/${symbol}?apikey=${process.env.FMP_API_KEY}`,
     { next: { revalidate: 86400 } }
   );
 
@@ -503,10 +502,10 @@ export async function getPriceTarget(symbol: string): Promise<{
   targetMedian: number;
   lastDate: string;
 } | null> {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
 
   const res = await fetch(
-    `https://financialmodelingprep.com/api/v4/price-target-summary?symbol=${symbol}&apikey=${FMP_API_KEY}`,
+    `https://financialmodelingprep.com/api/v4/price-target-summary?symbol=${symbol}&apikey=${process.env.FMP_API_KEY}`,
     { next: { revalidate: 86400 } }
   );
 
@@ -529,9 +528,9 @@ export async function getPriceTarget(symbol: string): Promise<{
  * Fetches historical daily prices for a given symbol.
  */
 export async function getHistoricalPrices(symbol: string) {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
   
-  const res = await fetch(`${BASE_URL}/historical-price-full/${symbol}?apikey=${FMP_API_KEY}`, {
+  const res = await fetch(`${BASE_URL}/historical-price-full/${symbol}?apikey=${process.env.FMP_API_KEY}`, {
     next: { revalidate: 3600 }, // Cache for 1 hour
   });
   
@@ -548,10 +547,10 @@ export async function getHistoricalPrices(symbol: string) {
 
 /** Search for stocks/ETFs/funds by query string. Returns top matches. */
 export async function searchSymbols(query: string) {
-  if (!FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
   if (!query.trim()) return [];
   const res = await fetch(
-    `${BASE_URL}/search?query=${encodeURIComponent(query)}&limit=10&apikey=${FMP_API_KEY}`,
+    `${BASE_URL}/search?query=${encodeURIComponent(query)}&limit=10&apikey=${process.env.FMP_API_KEY}`,
     { next: { revalidate: 0 } }
   );
   if (!res.ok) throw new Error("Failed to search symbols");
