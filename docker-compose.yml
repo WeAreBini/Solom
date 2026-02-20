@@ -12,14 +12,13 @@ services:
 
   site:
     build:
-      context: .
-      dockerfile: site/dev.Dockerfile
+      context: ./site
+      dockerfile: dev.Dockerfile
     restart: unless-stopped
     ports:
       - ${SITE_PORT}:${SITE_PORT}
     volumes:
       - ./site:/app
-      - ./shared:/shared
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:${SITE_PORT}/health" ]
       timeout: 10s

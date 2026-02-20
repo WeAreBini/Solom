@@ -4,14 +4,13 @@ WORKDIR /app
 # Install dependencies
 FROM base AS install
 RUN mkdir -p /temp/prod
-COPY site/package.json site/package-lock.json* /temp/prod/
+COPY package.json package-lock.json* /temp/prod/
 RUN cd /temp/prod && npm ci
 
 # Build
 FROM base AS build
 COPY --from=install /temp/prod/node_modules node_modules
-COPY site/ .
-COPY shared/ /shared
+COPY . .
 
 ARG PORT
 ARG HOSTNAME
