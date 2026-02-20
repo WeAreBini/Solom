@@ -86,8 +86,11 @@ COPY --from=build /app/supabase ./supabase
 # Create supabase temp directory and ensure nextjs user can write to it
 RUN mkdir -p /app/supabase/.temp && chown -R nextjs:nextjs /app/supabase
 
+# Create Next.js cache directory and ensure nextjs user can write to it
+RUN mkdir -p /app/.next/cache && chown -R nextjs:nextjs /app/.next
+
 USER nextjs
 
 # Run migrations (non-blocking) then start server
 # The || true ensures the server starts even if migrations fail
-ENTRYPOINT sh -c 'supabase db push --yes --db-url "$DB_PRIVATE_CONNECTION_STRING" || echo "Migration warning: db push returned non-zero exit code, continuing..."; exec node server.js'
+ENTRYPOINT sh -c 'supabase db push --yes --db-url "${DB_PRIVATE_CONNECTION_STRING}?sslmode=disable" || echo "Migration warning: db push returned non-zero exit code, continuing..."; exec node server.js'
