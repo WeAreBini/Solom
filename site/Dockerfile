@@ -41,7 +41,8 @@ RUN apt-get update && apt-get install -y curl unzip \
   && curl -L https://github.com/supabase/cli/releases/download/${SUPABASE_CLI_VERSION}/supabase_linux_amd64.tar.gz -o supabase.tar.gz \
   && tar -xvzf supabase.tar.gz \
   && mv supabase /usr/local/bin/ \
-  && rm supabase.tar.gz
+  && rm supabase.tar.gz \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system nextjs && useradd --system --create-home --gid nextjs nextjs
 
@@ -50,6 +51,11 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/supabase ./supabase
 
+# Create supabase temp directory and ensure nextjs user can write to it
+RUN mkdir -p /app/supabase/.temp && chown -R nextjs:nextjs /app/supabase
+
 USER nextjs
 
-ENTRYPOINT supabase db push --debug --yes --db-url $DB_PRIVATE_CONNECTION_STRING && node server.js
+# Run migrations (non-blocking) then start server
+# The || true ensures the server starts even if migrations fail
+ENTRYPOINT sh -c 'supabase db push --yes --db-url "$DB_PRIVATE_CONNECTION_STRING" || echo "Migration warning: db push returned non-zero exit code, continuing..."; exec node server.js'
