@@ -26,7 +26,7 @@ export function SimulatedTradeCard({ symbol, currentPrice }: SimulatedTradeCardP
   return (
     <Card className="glass-card">
       <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-semibold">Trade {symbol}</CardTitle>
+        <CardTitle className="text-lg font-semibold">Paper Trade {symbol}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <Tabs value={tradeType} onValueChange={(v) => setTradeType(v as 'buy' | 'sell')} className="w-full">
@@ -63,7 +63,7 @@ export function SimulatedTradeCard({ symbol, currentPrice }: SimulatedTradeCardP
         </div>
 
         <Button className="w-full text-lg h-12 font-semibold" variant={tradeType === 'buy' ? 'default' : 'destructive'}>
-          Review Order
+          Review Paper Order
         </Button>
       </CardContent>
     </Card>

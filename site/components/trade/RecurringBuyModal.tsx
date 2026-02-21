@@ -39,8 +39,8 @@ export function RecurringBuyModal({ symbol, currentPrice }: RecurringBuyModalPro
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSave = () => {
-    // In a real app, this would call an API to save the recurring buy
-    toast.success(`Saved recurring buy: $${amount} of ${symbol} every ${frequency} on ${day}`);
+    // In a real app, this would call an API to save the recurring paper trade
+    toast.success(`Saved recurring paper trade: $${amount} of ${symbol} every ${frequency} on ${day}`);
     setIsOpen(false);
   };
 
@@ -49,14 +49,14 @@ export function RecurringBuyModal({ symbol, currentPrice }: RecurringBuyModalPro
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full gap-2">
           <CalendarClock className="h-4 w-4" />
-          Set Up Recurring Buy
+          Set Up Recurring Paper Trade
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Recurring Investment</DialogTitle>
+          <DialogTitle>Recurring Paper Investment</DialogTitle>
           <DialogDescription>
-            Automate your investing by setting up a recurring buy for {symbol}.
+            Automate your investing by setting up a recurring paper trade for {symbol}.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

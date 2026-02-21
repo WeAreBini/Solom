@@ -53,11 +53,10 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "Overview",
     items: [
       { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { name: "Trade", href: "/trade", icon: LineChart },
+      { name: "Simulator", href: "/trade", icon: LineChart },
       { name: "Discover", href: "/discover", icon: Compass },
       { name: "Market", href: "/market", icon: LineChart },
       { name: "Crypto", href: "/crypto", icon: Bitcoin },
-      { name: "Earn", href: "/earn", icon: Coins },
     ],
   },
   {
@@ -85,7 +84,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Community & Learn",
     items: [
-      { name: "Learn to Earn", href: "/learn", icon: GraduationCap },
+      { name: "Learn", href: "/learn", icon: GraduationCap },
       { name: "Community", href: "/community", icon: Users },
     ],
   },

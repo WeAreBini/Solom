@@ -626,6 +626,7 @@ export async function getCompanyProfile(symbol: string): Promise<{
   country: string;
   city: string;
   state: string;
+  marketCap?: number;
 } | null> {
   const mockData = {
     description: `${symbol} is a leading company in its sector.`,
@@ -638,6 +639,7 @@ export async function getCompanyProfile(symbol: string): Promise<{
     country: "US",
     city: "Cupertino",
     state: "CA",
+    marketCap: 2000000000000,
   };
   if (!API_KEY) return mockData;
 
@@ -668,6 +670,7 @@ export async function getCompanyProfile(symbol: string): Promise<{
       country: p.country || "",
       city: p.city || "",
       state: p.state || "",
+      marketCap: p.mktCap || 0,
     };
   } catch (error) {
     console.error(`Error fetching profile for ${symbol}:`, error);

@@ -5,47 +5,40 @@
  * Displays candlestick data and volume bars.
  * @ai-related app/trade/page.tsx
  */
-import React, { useEffect, useRef } from "react";
-import { createChart, ColorType, IChartApi, ISeriesApi } from "lightweight-charts";
+import React, { useEffect, useRef, useMemo } from "react";
+import { createChart, ColorType, IChartApi } from "lightweight-charts";
 import { useTheme } from "next-themes";
+import { useHistoricalPrices } from "@/hooks/use-fmp";
+import { Loader2 } from "lucide-react";
 
 interface AdvancedChartProps {
   symbol: string;
-  data?: { time: string; open: number; high: number; low: number; close: number; volume: number }[];
 }
 
-// Mock data generator if no data provided
-const generateMockData = () => {
-  const data = [];
-  let time = new Date("2023-01-01").getTime();
-  let close = 150;
-  for (let i = 0; i < 100; i++) {
-    const open = close + (Math.random() - 0.5) * 5;
-    const high = Math.max(open, close) + Math.random() * 5;
-    const low = Math.min(open, close) - Math.random() * 5;
-    close = open + (Math.random() - 0.5) * 10;
-    const volume = Math.floor(Math.random() * 10000) + 1000;
-    
-    data.push({
-      time: new Date(time).toISOString().split("T")[0],
-      open,
-      high,
-      low,
-      close,
-      volume,
-    });
-    time += 24 * 60 * 60 * 1000; // Add one day
-  }
-  return data;
-};
-
-export function AdvancedChart({ symbol, data = generateMockData() }: AdvancedChartProps) {
+export function AdvancedChart({ symbol }: AdvancedChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const { resolvedTheme } = useTheme();
   const chartRef = useRef<IChartApi | null>(null);
 
+  const { data: historicalData, isLoading, isError } = useHistoricalPrices(symbol);
+
+  const chartData = useMemo(() => {
+    if (!historicalData || !Array.isArray(historicalData)) return [];
+    
+    // FMP returns newest first, so we reverse it to oldest first
+    // Map date to time for lightweight-charts
+    return [...historicalData].reverse().map((d) => ({
+      time: d.date,
+      open: d.open,
+      high: d.high,
+      low: d.low,
+      close: d.close,
+      volume: d.volume,
+    }));
+  }, [historicalData]);
+
   useEffect(() => {
-    if (!chartContainerRef.current) return;
+    if (!chartContainerRef.current || chartData.length === 0) return;
 
     const isDark = resolvedTheme === "dark";
     const backgroundColor = isDark ? "transparent" : "transparent";
@@ -80,7 +73,7 @@ export function AdvancedChart({ symbol, data = generateMockData() }: AdvancedCha
     });
 
     candlestickSeries.setData(
-      data.map((d) => ({
+      chartData.map((d) => ({
         time: d.time,
         open: d.open,
         high: d.high,
@@ -105,7 +98,7 @@ export function AdvancedChart({ symbol, data = generateMockData() }: AdvancedCha
     });
 
     volumeSeries.setData(
-      data.map((d) => ({
+      chartData.map((d) => ({
         time: d.time,
         value: d.volume,
         color: d.close > d.open ? "rgba(34, 197, 94, 0.5)" : "rgba(239, 68, 68, 0.5)",
@@ -127,7 +120,23 @@ export function AdvancedChart({ symbol, data = generateMockData() }: AdvancedCha
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [data, resolvedTheme]);
+  }, [chartData, resolvedTheme]);
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-full min-h-[400px] flex items-center justify-center border rounded-md bg-muted/10">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="w-full h-full min-h-[400px] flex items-center justify-center border rounded-md bg-muted/10">
+        <p className="text-muted-foreground">Failed to load chart data.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full min-h-[400px] relative">

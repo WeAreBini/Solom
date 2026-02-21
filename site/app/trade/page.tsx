@@ -3,25 +3,30 @@ import { OrderTicket } from "@/components/trade/OrderTicket";
 import { AdvancedChart } from "@/components/trade/AdvancedChart";
 import { NewsFeed } from "@/components/news/NewsFeed";
 import { RecurringBuyModal } from "@/components/trade/RecurringBuyModal";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import CompanyProfile from "@/components/finance/CompanyProfile";
+import AnalystRatings from "@/components/finance/AnalystRatings";
+import { KeyStatistics } from "@/components/finance/KeyStatistics";
+import { Card, CardContent } from "@/components/ui/card";
+import { getQuote } from "@/app/actions/fmp";
 
 /**
  * @ai-context Trade page — hosts the OrderTicket, advanced charting, news feed, and recurring buys.
  * @ai-related components/trade/OrderTicket.tsx, components/trade/AdvancedChart.tsx, components/news/NewsFeed.tsx
  */
 
-export const metadata = { title: "Trade" };
+export const metadata = { title: "Simulator" };
 
-export default function TradePage() {
+export default async function TradePage() {
   // Mock data for the trade page
   const symbol = "AAPL";
-  const currentPrice = 150.25;
+  const quote = await getQuote(symbol);
+  const currentPrice = quote?.price || 150.25;
   const buyingPower = 10000.0;
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-8">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Trade</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Simulator</h1>
         <p className="text-muted-foreground">
           Execute paper trades and analyze advanced charts.
         </p>
@@ -39,6 +44,8 @@ export default function TradePage() {
           <div className="h-[400px]">
             <NewsFeed symbol={symbol} />
           </div>
+          
+          <KeyStatistics quote={quote} />
         </div>
 
         {/* Right Column: Order Ticket & Recurring Buy */}
@@ -49,6 +56,8 @@ export default function TradePage() {
             buyingPower={buyingPower}
           />
           <RecurringBuyModal symbol={symbol} currentPrice={currentPrice} />
+          <CompanyProfile symbol={symbol} />
+          <AnalystRatings symbol={symbol} />
         </div>
       </div>
     </div>

@@ -46,14 +46,14 @@ export function OrderTicket({ symbol, currentPrice, buyingPower }: OrderTicketPr
       price: orderType === "market" ? currentPrice : parsedLimitPrice,
       total: estimatedCost,
     });
-    toast.success(`Trade executed: ${orderAction.toUpperCase()} ${parsedShares} shares of ${symbol}`);
+    toast.success(`Paper trade executed: ${orderAction.toUpperCase()} ${parsedShares} shares of ${symbol}`);
   };
 
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Trade {symbol}</span>
+          <span>Paper Trade {symbol}</span>
           <span className="text-sm font-normal text-muted-foreground">
             ${currentPrice.toFixed(2)}
           </span>

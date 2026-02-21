@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, BookOpen, Trophy, Loader2 } from "lucide-react";
+import { CheckCircle2, BookOpen, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 
@@ -16,7 +16,6 @@ interface Module {
   id: string;
   title: string;
   description: string;
-  reward: number;
   duration: string;
 }
 
@@ -25,28 +24,24 @@ const MODULES: Module[] = [
     id: "intro-to-options",
     title: "Intro to Options",
     description: "Learn the basics of call and put options, strike prices, and expiration dates.",
-    reward: 500,
     duration: "15 min",
   },
   {
     id: "risk-management",
     title: "Risk Management",
     description: "Understand position sizing, stop losses, and how to protect your capital.",
-    reward: 500,
     duration: "20 min",
   },
   {
     id: "technical-analysis-101",
     title: "Technical Analysis 101",
     description: "Master support, resistance, moving averages, and basic chart patterns.",
-    reward: 750,
     duration: "30 min",
   },
   {
     id: "fundamental-analysis",
     title: "Fundamental Analysis",
     description: "Learn how to read balance sheets, income statements, and evaluate company health.",
-    reward: 1000,
     duration: "45 min",
   },
 ];
@@ -84,7 +79,7 @@ export function CourseList() {
     fetchProgress();
   }, [supabase]);
 
-  const handleComplete = async (moduleId: string, reward: number) => {
+  const handleComplete = async (moduleId: string) => {
     setLoading(moduleId);
     try {
       const response = await fetch("/api/learn/complete", {
@@ -92,7 +87,7 @@ export function CourseList() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ moduleId, reward }),
+        body: JSON.stringify({ moduleId }),
       });
 
       if (!response.ok) {
@@ -103,7 +98,7 @@ export function CourseList() {
       setCompletedModules((prev) => new Set(prev).add(moduleId));
       
       toast.success("Module Completed! 🎉", {
-        description: `You've earned $${reward} in paper trading balance.`,
+        description: "You've successfully completed this module.",
       });
     } catch (error: unknown) {
       toast.error("Error", {
@@ -152,13 +147,9 @@ export function CourseList() {
             <CardContent className="flex-1">
               <p className="text-sm text-muted-foreground">{mod.description}</p>
             </CardContent>
-            <CardFooter className="flex justify-between items-center border-t pt-4">
-              <div className="flex items-center text-sm font-medium text-amber-500">
-                <Trophy className="h-4 w-4 mr-1.5" />
-                +${mod.reward} Reward
-              </div>
+            <CardFooter className="flex justify-end items-center border-t pt-4">
               <Button
-                onClick={() => handleComplete(mod.id, mod.reward)}
+                onClick={() => handleComplete(mod.id)}
                 disabled={isCompleted || isLoading}
                 variant={isCompleted ? "outline" : "default"}
               >
