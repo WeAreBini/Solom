@@ -10,6 +10,9 @@ import { MarketIndicesStrip } from '@/components/finance/MarketIndicesStrip';
 import { Sparkline } from '@/components/finance/Sparkline';
 import { StockChart } from '@/components/finance/StockChart';
 import { AssetAllocationChart } from '@/components/finance/AssetAllocationChart';
+import { PortfolioSummary } from '@/components/dashboard/PortfolioSummary';
+import { WatchlistWidget } from '@/components/watchlist/WatchlistWidget';
+import { AIInsightsWidget } from '@/components/dashboard/AIInsightsWidget';
 import { getMarketActives, getQuotes, getMarketNews, getHistoricalPrices } from '@/app/actions/fmp';
 import { createClient } from '@/lib/supabase/server';
 import { TrendingUp, Search, ArrowRight } from 'lucide-react';
@@ -142,6 +145,14 @@ export default async function DashboardPage() {
         { name: 'Equities', value: 0 }
       ];
 
+  const watchlistItems = marketSummary.map(stock => ({
+    symbol: stock.symbol,
+    name: stock.name,
+    price: stock.price,
+    changePct: stock.change,
+    sparklineData: sparklineDataMap[stock.symbol] || [],
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       {/* Market Indices Strip */}
@@ -160,36 +171,13 @@ export default async function DashboardPage() {
           <div className="lg:col-span-8 flex flex-col gap-6">
             {/* Portfolio Metrics */}
             <div className="grid gap-4 md:grid-cols-3">
-              <Card className="glass-card md:col-span-3 bg-breathing-gradient border-primary/20">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Portfolio Value</CardTitle>
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                </CardHeader>
-                <CardContent className="flex flex-col gap-6 pt-4">
-                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div>
-                      <div className="text-6xl md:text-7xl font-extrabold tabular-nums tracking-tighter drop-shadow-sm">
-                        ${fmt(currentValue)}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-2 font-medium">
-                        Cost basis: ${fmt(totalInvested)}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-start md:items-end gap-2 bg-background/40 p-4 rounded-xl backdrop-blur-md border border-white/10">
-                      <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Return</div>
-                      <div className={`text-4xl font-bold tabular-nums tracking-tight ${totalReturn >= 0 ? 'text-glow-positive' : 'text-glow-negative'}`}>
-                        {totalReturn < 0 ? '-' : '+'}${fmt(Math.abs(totalReturn))}
-                      </div>
-                      <GainLossBadge value={returnPct} isPercentage className="text-lg px-3 py-1 shadow-sm" />
-                    </div>
-                  </div>
-                  
-                  {/* Portfolio Performance Chart */}
-                  <div className="h-[250px] w-full mt-4">
-                    <StockChart data={mockPortfolioHistory} />
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="md:col-span-3">
+                <PortfolioSummary
+                  totalBalance={currentValue}
+                  dailyPnL={totalReturn}
+                  dailyPnLPct={returnPct}
+                />
+              </div>
             </div>
 
             {/* Holdings */}
@@ -301,6 +289,14 @@ export default async function DashboardPage() {
 
           {/* Right Column: Market Summary & News */}
           <div className="lg:col-span-4 flex flex-col gap-6">
+            {/* AI Insights Widget */}
+            <AIInsightsWidget />
+
+            {/* Watchlist Widget */}
+            <div className="h-[400px]">
+              <WatchlistWidget items={watchlistItems} />
+            </div>
+
             {/* Market Summary */}
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">

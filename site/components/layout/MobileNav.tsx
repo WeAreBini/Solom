@@ -22,6 +22,9 @@ import {
   User,
   Compass,
   Bitcoin,
+  Coins,
+  GraduationCap,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -43,20 +46,24 @@ interface NavItem {
 /* ── Primary bottom tabs ─────────────────────────────────── */
 const primaryTabs: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Market", href: "/market", icon: LineChart },
+  { name: "Trade", href: "/trade", icon: LineChart },
   { name: "Watchlist", href: "/watchlist", icon: Star },
   { name: "Earnings", href: "/earnings", icon: CalendarDays },
 ];
 
 /* ── Overflow items shown in the "More" sheet ────────────── */
 const moreItems: NavItem[] = [
+  { name: "Market", href: "/market", icon: LineChart },
   { name: "Discover", href: "/discover", icon: Compass },
   { name: "Crypto", href: "/crypto", icon: Bitcoin },
+  { name: "Earn", href: "/earn", icon: Coins },
   { name: "13F Holdings", href: "/13f", icon: Briefcase },
   { name: "Insider/Congress", href: "/insider-senate", icon: Building2 },
   { name: "Economic", href: "/economic", icon: Globe },
   { name: "AI Chat", href: "/chat", icon: MessageSquare },
   { name: "Rankings", href: "/ranks", icon: Trophy },
+  { name: "Learn to Earn", href: "/learn", icon: GraduationCap },
+  { name: "Community", href: "/community", icon: Users },
   { name: "Profile", href: "/profile", icon: User },
 ];
 

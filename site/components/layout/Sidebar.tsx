@@ -24,6 +24,9 @@ import {
   PanelLeftOpen,
   Compass,
   Bitcoin,
+  Coins,
+  GraduationCap,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
@@ -50,9 +53,11 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "Overview",
     items: [
       { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Trade", href: "/trade", icon: LineChart },
       { name: "Discover", href: "/discover", icon: Compass },
       { name: "Market", href: "/market", icon: LineChart },
       { name: "Crypto", href: "/crypto", icon: Bitcoin },
+      { name: "Earn", href: "/earn", icon: Coins },
     ],
   },
   {
@@ -75,6 +80,13 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { name: "AI Chat", href: "/chat", icon: MessageSquare },
       { name: "Rankings", href: "/ranks", icon: Trophy },
+    ],
+  },
+  {
+    label: "Community & Learn",
+    items: [
+      { name: "Learn to Earn", href: "/learn", icon: GraduationCap },
+      { name: "Community", href: "/community", icon: Users },
     ],
   },
 ];
