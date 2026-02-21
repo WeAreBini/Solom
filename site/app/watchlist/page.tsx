@@ -6,9 +6,20 @@ import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getQuotes } from '@/app/actions/fmp';
-import { StockTickerCard } from '@/components/finance/StockTickerCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { WatchlistActions } from '@/components/watchlist/watchlist-actions';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Sparkline } from '@/components/finance/Sparkline';
+import { GainLossBadge } from '@/components/finance/GainLossBadge';
+import { Button } from '@/components/ui/button';
+import { Bell } from 'lucide-react';
 
 export const metadata = { title: 'Watchlist' };
 
@@ -18,13 +29,46 @@ function WatchlistSkeleton() {
       <Skeleton className="h-9 w-48" />
       <Skeleton className="h-5 w-72" />
       <Skeleton className="h-10 w-72" />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-28 rounded-xl" />
-        ))}
+      <div className="glass-card rounded-xl border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Symbol</TableHead>
+              <TableHead className="text-right">Price</TableHead>
+              <TableHead className="text-right">Change</TableHead>
+              <TableHead className="w-[120px]">7D Trend</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <TableRow key={i}>
+                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                <TableCell><Skeleton className="h-8 w-24" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
+}
+
+// Helper to generate mock 7D trend data
+function generateMockTrend(basePrice: number, change: number) {
+  const trend = [];
+  let currentPrice = basePrice - change; // Start price 7 days ago
+  const volatility = basePrice * 0.02; // 2% volatility
+  
+  for (let i = 0; i < 6; i++) {
+    trend.push(currentPrice);
+    currentPrice += (Math.random() - 0.5) * volatility;
+  }
+  trend.push(basePrice); // End at current price
+  return trend;
 }
 
 async function WatchlistContent() {
@@ -103,26 +147,61 @@ async function WatchlistContent() {
         <p className="text-muted-foreground">Keep track of your favorite stocks and assets.</p>
       </div>
       <WatchlistActions />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {symbols.map((sym) => {
-          const q = quoteMap.get(sym);
-          return (
-            <div key={sym} className="relative group">
-              <Link href={`/ticker/${sym}`}>
-                <StockTickerCard
-                  symbol={sym}
-                  name={(q?.name as string) ?? sym}
-                  price={(q?.price as number) ?? 0}
-                  change={(q?.change as number) ?? 0}
-                  changePercent={(q?.changesPercentage as number) ?? undefined}
-                />
-              </Link>
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <WatchlistActions symbol={sym} mode="remove" />
-              </div>
-            </div>
-          );
-        })}
+      
+      <div className="glass-card rounded-xl border overflow-hidden">
+        <Table className="tabular-nums">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Symbol</TableHead>
+              <TableHead className="text-right">Price</TableHead>
+              <TableHead className="text-right">Change</TableHead>
+              <TableHead className="w-[120px]">7D Trend</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {symbols.map((sym) => {
+              const q = quoteMap.get(sym);
+              const name = (q?.name as string) ?? sym;
+              const price = (q?.price as number) ?? 0;
+              const change = (q?.change as number) ?? 0;
+              const changePercent = (q?.changesPercentage as number) ?? 0;
+              const trendData = generateMockTrend(price, change);
+
+              return (
+                <TableRow key={sym} className="group">
+                  <TableCell>
+                    <Link href={`/ticker/${sym}`} className="flex flex-col hover:underline">
+                      <span className="font-bold text-foreground">{sym}</span>
+                      <span className="text-xs text-muted-foreground truncate max-w-[150px]">{name}</span>
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end">
+                      <GainLossBadge value={changePercent} isPercentage size="sm" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="h-8 w-24">
+                      <Sparkline data={trendData} width="100%" height="100%" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Set Alert">
+                        <Bell className="h-4 w-4" />
+                      </Button>
+                      <WatchlistActions symbol={sym} mode="remove" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

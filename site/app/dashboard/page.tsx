@@ -8,6 +8,8 @@ import { StockTickerCard } from '@/components/finance/StockTickerCard';
 import { NewsCard } from '@/components/finance/NewsCard';
 import { MarketIndicesStrip } from '@/components/finance/MarketIndicesStrip';
 import { Sparkline } from '@/components/finance/Sparkline';
+import { StockChart } from '@/components/finance/StockChart';
+import { AssetAllocationChart } from '@/components/finance/AssetAllocationChart';
 import { getMarketActives, getQuotes, getMarketNews, getHistoricalPrices } from '@/app/actions/fmp';
 import { createClient } from '@/lib/supabase/server';
 import { TrendingUp, Search, ArrowRight } from 'lucide-react';
@@ -111,6 +113,35 @@ export default async function DashboardPage() {
 
   const isEmpty = portfolioItems.length === 0;
 
+  // ─── Mock Data for Charts ─────────────────────────────────────────
+  const mockPortfolioHistory = Array.from({ length: 30 }).map((_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (29 - i));
+    // Generate a somewhat realistic looking curve starting from totalInvested
+    const baseValue = totalInvested > 0 ? totalInvested : 10000;
+    const randomWalk = Math.sin(i / 5) * 500 + (i * 100) + (Math.random() * 200 - 100);
+    return {
+      date: date.toISOString().split('T')[0],
+      value: baseValue + randomWalk,
+    };
+  });
+
+  // If we have portfolio items, group by symbol for a simple allocation.
+  // In a real app, you'd group by sector or asset class.
+  const allocationData = portfolioItems.length > 0 
+    ? portfolioItems.map(item => {
+        const quote = quotesMap[item.symbol];
+        const livePrice = quote?.price ?? item.price_purchased;
+        return {
+          name: item.symbol,
+          value: livePrice * item.amount_of_shares
+        };
+      }).sort((a, b) => b.value - a.value).slice(0, 5) // Top 5
+    : [
+        { name: 'Cash', value: 10000 },
+        { name: 'Equities', value: 0 }
+      ];
+
   return (
     <div className="flex flex-col gap-6">
       {/* Market Indices Strip */}
@@ -134,21 +165,28 @@ export default async function DashboardPage() {
                   <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Portfolio Value</CardTitle>
                   <TrendingUp className="h-5 w-5 text-primary" />
                 </CardHeader>
-                <CardContent className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-4">
-                  <div>
-                    <div className="text-6xl md:text-7xl font-extrabold tabular-nums tracking-tighter drop-shadow-sm">
-                      ${fmt(currentValue)}
+                <CardContent className="flex flex-col gap-6 pt-4">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div>
+                      <div className="text-6xl md:text-7xl font-extrabold tabular-nums tracking-tighter drop-shadow-sm">
+                        ${fmt(currentValue)}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2 font-medium">
+                        Cost basis: ${fmt(totalInvested)}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-2 font-medium">
-                      Cost basis: ${fmt(totalInvested)}
-                    </p>
+                    <div className="flex flex-col items-start md:items-end gap-2 bg-background/40 p-4 rounded-xl backdrop-blur-md border border-white/10">
+                      <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Return</div>
+                      <div className={`text-4xl font-bold tabular-nums tracking-tight ${totalReturn >= 0 ? 'text-glow-positive' : 'text-glow-negative'}`}>
+                        {totalReturn < 0 ? '-' : '+'}${fmt(Math.abs(totalReturn))}
+                      </div>
+                      <GainLossBadge value={returnPct} isPercentage className="text-lg px-3 py-1 shadow-sm" />
+                    </div>
                   </div>
-                  <div className="flex flex-col items-start md:items-end gap-2 bg-background/40 p-4 rounded-xl backdrop-blur-md border border-white/10">
-                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Return</div>
-                    <div className={`text-4xl font-bold tabular-nums tracking-tight ${totalReturn >= 0 ? 'text-glow-positive' : 'text-glow-negative'}`}>
-                      {totalReturn < 0 ? '-' : '+'}${fmt(Math.abs(totalReturn))}
-                    </div>
-                    <GainLossBadge value={returnPct} isPercentage className="text-lg px-3 py-1 shadow-sm" />
+                  
+                  {/* Portfolio Performance Chart */}
+                  <div className="h-[250px] w-full mt-4">
+                    <StockChart data={mockPortfolioHistory} />
                   </div>
                 </CardContent>
               </Card>
@@ -252,6 +290,12 @@ export default async function DashboardPage() {
                   </CardContent>
                 </Card>
               )}
+            </div>
+
+            {/* Asset Allocation */}
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xl font-semibold tracking-tight">Asset Allocation</h2>
+              <AssetAllocationChart data={allocationData} />
             </div>
           </div>
 

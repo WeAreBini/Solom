@@ -21,8 +21,12 @@ import {
   getAnalystRatings,
   getPriceTarget,
   getTickerNews,
+  getIncomeStatement,
 } from '@/app/actions/fmp';
 import { Building2, Globe, TrendingUp, Target, Newspaper } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FinancialsChart } from '@/components/finance/FinancialsChart';
+import { SimulatedTradeCard } from '@/components/finance/SimulatedTradeCard';
 
 // ---------------------------------------------------------------------------
 // Dynamic metadata
@@ -119,13 +123,14 @@ function AnalystBar({ label, count, total, color }: { label: string; count: numb
  */
 async function TickerContent({ symbol }: { symbol: string }) {
   // Fetch all data in parallel
-  const [quote, historicalData, profile, ratings, priceTarget, news] = await Promise.all([
+  const [quote, historicalData, profile, ratings, priceTarget, news, incomeStatement] = await Promise.all([
     getQuote(symbol).catch(() => null),
     getHistoricalPrices(symbol).catch(() => []),
     getCompanyProfile(symbol).catch(() => null),
     getAnalystRatings(symbol).catch(() => null),
     getPriceTarget(symbol).catch(() => null),
     getTickerNews(symbol, 6).catch(() => []),
+    getIncomeStatement(symbol).catch(() => []),
   ]);
 
   if (!quote) {
@@ -178,83 +183,112 @@ async function TickerContent({ symbol }: { symbol: string }) {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Left column: Chart + Stats + Profile — 2/3 width */}
         <div className="xl:col-span-2 space-y-6">
-          {/* Chart */}
-          <Card className="w-full h-[400px] p-4 bg-zinc-950 dark:bg-black border-zinc-800 glass-card">
-            <StockChart data={chartData} />
-          </Card>
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="financials">Financials</TabsTrigger>
+            </TabsList>
 
-          {/* Key Statistics */}
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight mb-4">Key Statistics</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard label="Market Cap" value={formatLargeNumber(quote.marketCap)} />
-              <StatCard label="P/E Ratio" value={quote.pe != null ? (quote.pe as number).toFixed(2) : 'N/A'} />
-              <StatCard label="EPS" value={quote.eps != null ? `$${(quote.eps as number).toFixed(2)}` : 'N/A'} />
-              <StatCard label="Shares Out" value={formatLargeNumber(quote.sharesOutstanding)} />
-              <StatCard label="Open" value={quote.open != null ? `$${(quote.open as number).toFixed(2)}` : 'N/A'} />
-              <StatCard label="Prev Close" value={quote.previousClose != null ? `$${(quote.previousClose as number).toFixed(2)}` : 'N/A'} />
-              <StatCard label="Day Range" value={`${quote.dayLow?.toFixed(2) ?? '—'} / ${quote.dayHigh?.toFixed(2) ?? '—'}`} />
-              <StatCard label="52W Range" value={`${quote.yearLow?.toFixed(2) ?? '—'} / ${quote.yearHigh?.toFixed(2) ?? '—'}`} />
-            </div>
-          </div>
+            <TabsContent value="overview" className="space-y-6 mt-0">
+              {/* Chart */}
+              <Card className="w-full h-[400px] p-4 bg-zinc-950 dark:bg-black border-zinc-800 glass-card">
+                <StockChart data={chartData} />
+              </Card>
 
-          {/* Company Profile */}
-          {profile && (
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Company Profile
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {profile.description && (
-                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
-                    {profile.description}
-                  </p>
-                )}
-                <Separator />
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  {profile.ceo && (
-                    <div>
-                      <p className="text-muted-foreground">CEO</p>
-                      <p className="font-medium">{profile.ceo}</p>
-                    </div>
-                  )}
-                  {profile.industry && (
-                    <div>
-                      <p className="text-muted-foreground">Industry</p>
-                      <p className="font-medium">{profile.industry}</p>
-                    </div>
-                  )}
-                  {profile.fullTimeEmployees && (
-                    <div>
-                      <p className="text-muted-foreground">Employees</p>
-                      <p className="font-medium tabular-nums">{Number(profile.fullTimeEmployees).toLocaleString()}</p>
-                    </div>
-                  )}
-                  {profile.website && (
-                    <div>
-                      <p className="text-muted-foreground">Website</p>
-                      <a
-                        href={profile.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-medium text-primary hover:underline flex items-center gap-1"
-                      >
-                        <Globe className="h-3 w-3" />
-                        {profile.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-                      </a>
-                    </div>
-                  )}
+              {/* Key Statistics */}
+              <div>
+                <h2 className="text-xl font-semibold tracking-tight mb-4">Key Statistics</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <StatCard label="Market Cap" value={formatLargeNumber(quote.marketCap)} />
+                  <StatCard label="P/E Ratio" value={quote.pe != null ? (quote.pe as number).toFixed(2) : 'N/A'} />
+                  <StatCard label="EPS" value={quote.eps != null ? `$${(quote.eps as number).toFixed(2)}` : 'N/A'} />
+                  <StatCard label="Shares Out" value={formatLargeNumber(quote.sharesOutstanding)} />
+                  <StatCard label="Open" value={quote.open != null ? `$${(quote.open as number).toFixed(2)}` : 'N/A'} />
+                  <StatCard label="Prev Close" value={quote.previousClose != null ? `$${(quote.previousClose as number).toFixed(2)}` : 'N/A'} />
+                  <StatCard label="Day Range" value={`${quote.dayLow?.toFixed(2) ?? '—'} / ${quote.dayHigh?.toFixed(2) ?? '—'}`} />
+                  <StatCard label="52W Range" value={`${quote.yearLow?.toFixed(2) ?? '—'} / ${quote.yearHigh?.toFixed(2) ?? '—'}`} />
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+
+              {/* Company Profile */}
+              {profile && (
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5" />
+                      Company Profile
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {profile.description && (
+                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
+                        {profile.description}
+                      </p>
+                    )}
+                    <Separator />
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      {profile.ceo && (
+                        <div>
+                          <p className="text-muted-foreground">CEO</p>
+                          <p className="font-medium">{profile.ceo}</p>
+                        </div>
+                      )}
+                      {profile.industry && (
+                        <div>
+                          <p className="text-muted-foreground">Industry</p>
+                          <p className="font-medium">{profile.industry}</p>
+                        </div>
+                      )}
+                      {profile.fullTimeEmployees && (
+                        <div>
+                          <p className="text-muted-foreground">Employees</p>
+                          <p className="font-medium tabular-nums">{Number(profile.fullTimeEmployees).toLocaleString()}</p>
+                        </div>
+                      )}
+                      {profile.website && (
+                        <div>
+                          <p className="text-muted-foreground">Website</p>
+                          <a
+                            href={profile.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-primary hover:underline flex items-center gap-1"
+                          >
+                            <Globe className="h-3 w-3" />
+                            {profile.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="financials" className="space-y-6 mt-0">
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle>Income Statement</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {incomeStatement && incomeStatement.length > 0 ? (
+                    <FinancialsChart data={incomeStatement.slice().reverse()} />
+                  ) : (
+                    <div className="flex items-center justify-center h-[350px] text-muted-foreground">
+                      No financial data available.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Right column: Ratings + Trading Info + News — 1/3 width */}
         <div className="space-y-6">
+          {/* Simulated Trade Card */}
+          <SimulatedTradeCard symbol={symbol} currentPrice={currentPrice} />
+
           {/* Analyst Ratings + Price Target */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
             {ratings && ratingsTotal > 0 && (

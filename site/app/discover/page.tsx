@@ -1,7 +1,8 @@
-import { getMarketActives, getMarketGainers, getMarketLosers } from "@/app/actions/fmp";
+import { getMarketActives, getMarketGainers, getMarketLosers, getSectorPerformance } from "@/app/actions/fmp";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDownIcon, ArrowUpIcon, TrendingUp, Flame, TrendingDown } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, TrendingUp, Flame, TrendingDown, Layers } from "lucide-react";
 import Link from "next/link";
+import { SectorHeatmap } from "@/components/finance/SectorHeatmap";
 
 export const metadata = {
   title: "Discover | Solom",
@@ -9,11 +10,17 @@ export const metadata = {
 };
 
 export default async function DiscoverPage() {
-  const [actives, gainers, losers] = await Promise.all([
+  const [actives, gainers, losers, sectors] = await Promise.all([
     getMarketActives(),
     getMarketGainers(),
     getMarketLosers(),
+    getSectorPerformance(),
   ]);
+
+  const parsedSectors = sectors.map((s: { sector: string; changesPercentage: string }) => ({
+    sector: s.sector,
+    changesPercentage: parseFloat(s.changesPercentage.replace('%', '')),
+  }));
 
   return (
     <div className="flex-1 space-y-6 p-6 pt-10">
@@ -24,6 +31,18 @@ export default async function DiscoverPage() {
             Explore trending stocks, top gainers, and market movers.
           </p>
         </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1">
+        <Card className="glass-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Sector Performance</CardTitle>
+            <Layers className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent className="pt-4">
+            <SectorHeatmap data={parsedSectors} />
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

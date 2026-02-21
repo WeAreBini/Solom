@@ -629,3 +629,70 @@ export async function searchSymbols(query: string) {
   const data = await res.json();
   return Array.isArray(data) ? data as { symbol: string; name: string; stockExchange: string; exchangeShortName: string }[] : [];
 }
+
+const getMockSectorPerformance = () => [
+  { sector: "Technology", changesPercentage: "1.50%" },
+  { sector: "Healthcare", changesPercentage: "0.80%" },
+  { sector: "Financials", changesPercentage: "-0.20%" },
+  { sector: "Consumer Discretionary", changesPercentage: "1.10%" },
+  { sector: "Energy", changesPercentage: "-1.50%" },
+  { sector: "Industrials", changesPercentage: "0.50%" },
+  { sector: "Materials", changesPercentage: "0.30%" },
+  { sector: "Utilities", changesPercentage: "-0.10%" },
+  { sector: "Real Estate", changesPercentage: "0.20%" },
+  { sector: "Communication Services", changesPercentage: "1.20%" },
+  { sector: "Consumer Staples", changesPercentage: "0.40%" },
+];
+
+/**
+ * Fetches sector performance.
+ */
+export async function getSectorPerformance() {
+  if (!process.env.FMP_API_KEY) return getMockSectorPerformance();
+  
+  try {
+    const res = await fetch(`${BASE_URL}/sector-performance?apikey=${process.env.FMP_API_KEY}`, {
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    });
+    
+    if (!res.ok) return getMockSectorPerformance();
+    
+    const data = await res.json();
+    if (!Array.isArray(data)) return getMockSectorPerformance();
+    
+    return data;
+  } catch (error) {
+    console.error("Error fetching sector performance:", error);
+    return getMockSectorPerformance();
+  }
+}
+
+const getMockIncomeStatement = () => [
+  { date: "2023-12-31", revenue: 1000000000, netIncome: 200000000 },
+  { date: "2022-12-31", revenue: 900000000, netIncome: 180000000 },
+  { date: "2021-12-31", revenue: 800000000, netIncome: 150000000 },
+  { date: "2020-12-31", revenue: 700000000, netIncome: 120000000 },
+];
+
+/**
+ * Fetches the last 4 annual income statements for a given symbol.
+ */
+export async function getIncomeStatement(symbol: string) {
+  if (!process.env.FMP_API_KEY) return getMockIncomeStatement();
+  
+  try {
+    const res = await fetch(`${BASE_URL}/income-statement/${symbol}?limit=4&apikey=${process.env.FMP_API_KEY}`, {
+      next: { revalidate: 86400 }, // Cache for 24 hours
+    });
+    
+    if (!res.ok) return getMockIncomeStatement();
+    
+    const data = await res.json();
+    if (!Array.isArray(data)) return getMockIncomeStatement();
+    
+    return data;
+  } catch (error) {
+    console.error(`Error fetching income statement for ${symbol}:`, error);
+    return getMockIncomeStatement();
+  }
+}
