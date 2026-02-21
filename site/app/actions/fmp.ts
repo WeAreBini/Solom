@@ -171,13 +171,14 @@ export async function getCryptoQuotes() {
   if (!process.env.FMP_API_KEY) return getMockCrypto();
   
   try {
-    const res = await fetch(`${BASE_URL}/quotes/crypto?apikey=${process.env.FMP_API_KEY}`, {
+    const res = await fetch(`https://financialmodelingprep.com/stable/batch-crypto-quotes?apikey=${process.env.FMP_API_KEY}`, {
       next: { revalidate: 60 }, // Cache for 60 seconds
     });
     
     if (!res.ok) throw new Error("Failed to fetch crypto quotes");
     
-    const data = await res.json();
+    const json = await res.json();
+    const data = Array.isArray(json) ? json : (json.data || json.results || json);
     if (Array.isArray(data)) return data.slice(0, 20); // Return top 20
     
     throw new Error(`Invalid response from FMP API: ${JSON.stringify(data)}`);
@@ -196,13 +197,14 @@ export async function getEconomicIndicator(name: string) {
   if (!process.env.FMP_API_KEY) return mockData;
   
   try {
-    const res = await fetch(`https://financialmodelingprep.com/api/v4/economic?name=${name}&apikey=${process.env.FMP_API_KEY}`, {
+    const res = await fetch(`https://financialmodelingprep.com/stable/economic-indicators?name=${name}&apikey=${process.env.FMP_API_KEY}`, {
       next: { revalidate: 86400 }, // Cache for 24 hours since economic data updates infrequently
     });
     
     if (!res.ok) throw new Error(`Failed to fetch economic indicator: ${name}`);
     
-    const data = await res.json();
+    const json = await res.json();
+    const data = Array.isArray(json) ? json : (json.data || json.results || json);
     if (!Array.isArray(data)) throw new Error(`Invalid response from FMP API: ${JSON.stringify(data)}`);
     return data;
   } catch (error) {
@@ -225,13 +227,14 @@ export async function getInsiderTrades() {
 
   try {
     const res = await fetch(
-      `https://financialmodelingprep.com/api/v4/insider-trading?transactionType=P-Purchase,S-Sale&limit=100&apikey=${process.env.FMP_API_KEY}`,
+      `https://financialmodelingprep.com/stable/insider-trading/latest?page=0&limit=100&apikey=${process.env.FMP_API_KEY}`,
       { next: { revalidate: 900 } } // Cache 15 min
     );
 
     if (!res.ok) throw new Error("Failed to fetch insider trades");
 
-    const data = await res.json();
+    const json = await res.json();
+    const data = Array.isArray(json) ? json : (json.data || json.results || json);
     if (!Array.isArray(data)) throw new Error(`Unexpected insider-trades response: ${JSON.stringify(data)}`);
     return data as {
       symbol: string;
@@ -339,13 +342,14 @@ export async function getForm13F(cik: string = "0001067983") {
 
   try {
     const res = await fetch(
-      `${BASE_URL}/form-thirteen/${cik}?apikey=${process.env.FMP_API_KEY}`,
+      `https://financialmodelingprep.com/stable/institutional-ownership/extract?cik=${cik}&year=2023&quarter=4&apikey=${process.env.FMP_API_KEY}`,
       { next: { revalidate: 86400 } }
     );
 
     if (!res.ok) throw new Error(`Failed to fetch 13F data for CIK ${cik}`);
 
-    const data = await res.json();
+    const json = await res.json();
+    const data = Array.isArray(json) ? json : (json.data || json.results || json);
     if (!Array.isArray(data)) throw new Error(`Unexpected 13F response: ${JSON.stringify(data)}`);
     return data as {
       date: string;
