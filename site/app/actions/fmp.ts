@@ -7,22 +7,27 @@
 
 const BASE_URL = "https://financialmodelingprep.com/api/v3";
 
-if (!process.env.FMP_API_KEY) {
-  console.warn("process.env.FMP_API_KEY is not set in environment variables.");
-}
+const API_KEY = process.env.FMP_API_KEY || "iNhYyvTDfaVYPdYJizU9KVEnBBUE3Ygm";
+
 
 /**
  * Fetches real-time quote data for a given symbol.
  */
 export async function getQuote(symbol: string) {
-  if (!process.env.FMP_API_KEY) return { symbol, price: 150.0, changesPercentage: 1.5, change: 2.25, name: `${symbol} Inc.` };
+  if (!API_KEY) return { symbol, price: 150.0, changesPercentage: 1.5, change: 2.25, name: `${symbol} Inc.` };
   
   try {
-    const res = await fetch(`${BASE_URL}/quote/${symbol}?apikey=${process.env.FMP_API_KEY}`, {
+    const res = await fetch(`${BASE_URL}/quote/${symbol}?apikey=${API_KEY}`, {
       next: { revalidate: 60 }, // Cache for 60 seconds
     });
     
-    if (!res.ok) throw new Error(`Failed to fetch quote for ${symbol}`);
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch quote for ${symbol}`);
+        return { symbol, price: 150.0, changesPercentage: 1.5, change: 2.25, name: `${symbol} Inc.` };
+      }
+      throw new Error(`Failed to fetch quote for ${symbol}`);
+    }
     
     const data = await res.json();
     if (!Array.isArray(data)) throw new Error(`Invalid response from FMP API: ${JSON.stringify(data)}`);
@@ -37,22 +42,28 @@ export async function getQuote(symbol: string) {
  * Fetches real-time quote data for multiple symbols.
  */
 export async function getQuotes(symbols: string[]) {
-  if (!process.env.FMP_API_KEY) return symbols.map(s => ({ symbol: s, price: 150.0, changesPercentage: 1.5, change: 2.25, name: `${s} Inc.` }));
+  if (!API_KEY) return symbols.map(s => ({ symbol: s, price: 150.0, changesPercentage: 1.5, change: 2.25, name: `${s} Inc.` }));
   if (!symbols.length) return [];
   
   try {
     const symbolString = symbols.join(',');
-    const res = await fetch(`${BASE_URL}/quote/${symbolString}?apikey=${process.env.FMP_API_KEY}`, {
+    const res = await fetch(`${BASE_URL}/quote/${symbolString}?apikey=${API_KEY}`, {
       next: { revalidate: 60 }, // Cache for 60 seconds
     });
     
-    if (!res.ok) throw new Error(`Failed to fetch quotes for ${symbolString}`);
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch quotes for ${symbolString}`);
+        return symbols.map(s => ({ symbol: s, price: 150.0, changesPercentage: 1.5, change: 2.25, name: `${s} Inc.` }));
+      }
+      throw new Error(`Failed to fetch quotes for ${symbolString}`);
+    }
     
     const data = await res.json();
     if (!Array.isArray(data)) throw new Error(`Invalid response from FMP API: ${JSON.stringify(data)}`);
     return data;
   } catch (error) {
-    console.error(`Error fetching quotes for ${symbols.join(',')}:`, error);
+    console.error(`Error fetching quotes for ${symbolString}:`, error);
     return symbols.map(s => ({ symbol: s, price: 150.0, changesPercentage: 1.5, change: 2.25, name: `${s} Inc.` }));
   }
 }
@@ -93,14 +104,20 @@ const getMockCrypto = () => [
  * Fetches the most active stocks in the market.
  */
 export async function getMarketActives() {
-  if (!process.env.FMP_API_KEY) return getMockActives();
+  if (!API_KEY) return getMockActives();
   
   try {
-    const res = await fetch(`${BASE_URL}/stock_market/actives?apikey=${process.env.FMP_API_KEY}`, {
+    const res = await fetch(`${BASE_URL}/stock_market/actives?apikey=${API_KEY}`, {
       next: { revalidate: 300 }, // Cache for 5 minutes
     });
     
-    if (!res.ok) throw new Error("Failed to fetch market actives");
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch market actives`);
+        return getMockActives();
+      }
+      throw new Error("Failed to fetch market actives");
+    }
     
     const data = await res.json();
     if (Array.isArray(data)) return data;
@@ -118,14 +135,20 @@ export async function getMarketActives() {
  * Fetches the top market gainers.
  */
 export async function getMarketGainers() {
-  if (!process.env.FMP_API_KEY) return getMockGainers();
+  if (!API_KEY) return getMockGainers();
   
   try {
-    const res = await fetch(`${BASE_URL}/stock_market/gainers?apikey=${process.env.FMP_API_KEY}`, {
+    const res = await fetch(`${BASE_URL}/stock_market/gainers?apikey=${API_KEY}`, {
       next: { revalidate: 300 }, // Cache for 5 minutes
     });
     
-    if (!res.ok) throw new Error("Failed to fetch market gainers");
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch market gainers`);
+        return getMockGainers();
+      }
+      throw new Error("Failed to fetch market gainers");
+    }
     
     const data = await res.json();
     if (Array.isArray(data)) return data;
@@ -143,14 +166,20 @@ export async function getMarketGainers() {
  * Fetches the top market losers.
  */
 export async function getMarketLosers() {
-  if (!process.env.FMP_API_KEY) return getMockLosers();
+  if (!API_KEY) return getMockLosers();
   
   try {
-    const res = await fetch(`${BASE_URL}/stock_market/losers?apikey=${process.env.FMP_API_KEY}`, {
+    const res = await fetch(`${BASE_URL}/stock_market/losers?apikey=${API_KEY}`, {
       next: { revalidate: 300 }, // Cache for 5 minutes
     });
     
-    if (!res.ok) throw new Error("Failed to fetch market losers");
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch market losers`);
+        return getMockLosers();
+      }
+      throw new Error("Failed to fetch market losers");
+    }
     
     const data = await res.json();
     if (Array.isArray(data)) return data;
@@ -168,14 +197,20 @@ export async function getMarketLosers() {
  * Fetches top cryptocurrencies.
  */
 export async function getCryptoQuotes() {
-  if (!process.env.FMP_API_KEY) return getMockCrypto();
+  if (!API_KEY) return getMockCrypto();
   
   try {
-    const res = await fetch(`https://financialmodelingprep.com/stable/batch-crypto-quotes?apikey=${process.env.FMP_API_KEY}`, {
+    const res = await fetch(`https://financialmodelingprep.com/api/v3/quotes/crypto?apikey=${API_KEY}`, {
       next: { revalidate: 60 }, // Cache for 60 seconds
     });
     
-    if (!res.ok) throw new Error("Failed to fetch crypto quotes");
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch crypto quotes`);
+        return getMockCrypto();
+      }
+      throw new Error("Failed to fetch crypto quotes");
+    }
     
     const json = await res.json();
     const data = Array.isArray(json) ? json : (json.data || json.results || json);
@@ -194,21 +229,27 @@ export async function getCryptoQuotes() {
  */
 export async function getEconomicIndicator(name: string) {
   const mockData = [{ date: "2024-01-01", value: 3.5 }, { date: "2023-12-01", value: 3.4 }];
-  if (!process.env.FMP_API_KEY) return mockData;
+  if (!API_KEY) return mockData;
   
   try {
-    const res = await fetch(`https://financialmodelingprep.com/stable/economic-indicators?name=${name}&apikey=${process.env.FMP_API_KEY}`, {
+    const res = await fetch(`https://financialmodelingprep.com/stable/economic-indicators?name=${name}&apikey=${API_KEY}`, {
       next: { revalidate: 86400 }, // Cache for 24 hours since economic data updates infrequently
     });
     
-    if (!res.ok) throw new Error(`Failed to fetch economic indicator: ${name}`);
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch economic indicator: ${name}`);
+        return mockData;
+      }
+      throw new Error(`Failed to fetch economic indicator: ${name}`);
+    }
     
     const json = await res.json();
     const data = Array.isArray(json) ? json : (json.data || json.results || json);
     if (!Array.isArray(data)) throw new Error(`Invalid response from FMP API: ${JSON.stringify(data)}`);
     return data;
   } catch (error) {
-    console.error(`Error fetching economic indicator ${name}:`, error);
+    console.error(`Error fetching economic indicator: ${name}:`, error);
     return mockData;
   }
 }
@@ -223,15 +264,21 @@ export async function getInsiderTrades() {
     { symbol: "AAPL", filingDate: "2024-02-20", transactionDate: "2024-02-18", reportingName: "Tim Cook", typeOfOwner: "CEO", transactionType: "S-Sale", securitiesTransacted: 10000, price: 180.5, securitiesOwned: 3000000, companyCik: "0000320193", reportingCik: "0001496686" },
     { symbol: "MSFT", filingDate: "2024-02-19", transactionDate: "2024-02-17", reportingName: "Satya Nadella", typeOfOwner: "CEO", transactionType: "P-Purchase", securitiesTransacted: 5000, price: 400.2, securitiesOwned: 1500000, companyCik: "0000789019", reportingCik: "0001590895" }
   ];
-  if (!process.env.FMP_API_KEY) return mockData;
+  if (!API_KEY) return mockData;
 
   try {
     const res = await fetch(
-      `https://financialmodelingprep.com/stable/insider-trading/latest?page=0&limit=100&apikey=${process.env.FMP_API_KEY}`,
+      `https://financialmodelingprep.com/stable/insider-trading/latest?page=0&limit=100&apikey=${API_KEY}`,
       { next: { revalidate: 900 } } // Cache 15 min
     );
 
-    if (!res.ok) throw new Error("Failed to fetch insider trades");
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch insider trades`);
+        return mockData;
+      }
+      throw new Error("Failed to fetch insider trades");
+    }
 
     const json = await res.json();
     const data = Array.isArray(json) ? json : (json.data || json.results || json);
@@ -264,15 +311,21 @@ export async function getSenateTrades() {
     { dateRecieved: "2024-02-20", transactionDate: "2024-02-15", owner: "Self", ticker: "NVDA", assetDescription: "NVIDIA Corp", type: "Purchase", amount: "$15,001 - $50,000", senator: "Nancy Pelosi", district: "CA-11", comment: "", link: "#" },
     { dateRecieved: "2024-02-18", transactionDate: "2024-02-10", owner: "Spouse", ticker: "TSLA", assetDescription: "Tesla Inc", type: "Sale", amount: "$50,001 - $100,000", senator: "Mitch McConnell", district: "KY", comment: "", link: "#" }
   ];
-  if (!process.env.FMP_API_KEY) return mockData;
+  if (!API_KEY) return mockData;
 
   try {
     const res = await fetch(
-      `https://financialmodelingprep.com/api/v4/senate-trading?limit=100&apikey=${process.env.FMP_API_KEY}`,
+      `https://financialmodelingprep.com/api/v4/senate-disclosure?limit=100&apikey=${API_KEY}`,
       { next: { revalidate: 3600 } } // Cache 1 hr
     );
 
-    if (!res.ok) throw new Error("Failed to fetch senate trades");
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch senate trades`);
+        return mockData;
+      }
+      throw new Error("Failed to fetch senate trades");
+    }
 
     const data = await res.json();
     if (!Array.isArray(data)) throw new Error(`Unexpected senate-trades response: ${JSON.stringify(data)}`);
@@ -304,15 +357,21 @@ export async function getInstitutionalHoldings(symbol: string) {
     { holder: "Vanguard Group Inc", shares: 150000000, dateReported: "2024-02-15", change: 500000, weightPercent: 8.5 },
     { holder: "BlackRock Inc.", shares: 120000000, dateReported: "2024-02-14", change: -200000, weightPercent: 6.8 }
   ];
-  if (!process.env.FMP_API_KEY) return mockData;
+  if (!API_KEY) return mockData;
 
   try {
     const res = await fetch(
-      `${BASE_URL}/institutional-holder/${symbol}?apikey=${process.env.FMP_API_KEY}`,
+      `${BASE_URL}/institutional-holder/${symbol}?apikey=${API_KEY}`,
       { next: { revalidate: 86400 } }
     );
 
-    if (!res.ok) throw new Error(`Failed to fetch institutional holdings for ${symbol}`);
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch institutional holdings for ${symbol}`);
+        return mockData;
+      }
+      throw new Error(`Failed to fetch institutional holdings for ${symbol}`);
+    }
 
     const data = await res.json();
     if (!Array.isArray(data)) throw new Error(`Unexpected institutional-holdings response: ${JSON.stringify(data)}`);
@@ -338,15 +397,21 @@ export async function getForm13F(cik: string = "0001067983") {
     { date: "2024-02-15", fillingDate: "2024-02-15", acceptedDate: "2024-02-15", cik, cusip: "037833100", tickercusip: "AAPL", nameOfIssuer: "APPLE INC", shares: 905560000, titleOfClass: "COM", value: 174300000000, link: "#", finalLink: "#" },
     { date: "2024-02-15", fillingDate: "2024-02-15", acceptedDate: "2024-02-15", cik, cusip: "060505104", tickercusip: "BAC", nameOfIssuer: "BANK OF AMERICA CORP", shares: 1032852006, titleOfClass: "COM", value: 34776000000, link: "#", finalLink: "#" }
   ];
-  if (!process.env.FMP_API_KEY) return mockData;
+  if (!API_KEY) return mockData;
 
   try {
     const res = await fetch(
-      `https://financialmodelingprep.com/stable/institutional-ownership/extract?cik=${cik}&year=2023&quarter=4&apikey=${process.env.FMP_API_KEY}`,
+      `https://financialmodelingprep.com/stable/institutional-ownership/extract?cik=${cik}&year=2023&quarter=4&apikey=${API_KEY}`,
       { next: { revalidate: 86400 } }
     );
 
-    if (!res.ok) throw new Error(`Failed to fetch 13F data for CIK ${cik}`);
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch 13F data for CIK ${cik}`);
+        return mockData;
+      }
+      throw new Error(`Failed to fetch 13F data for CIK ${cik}`);
+    }
 
     const json = await res.json();
     const data = Array.isArray(json) ? json : (json.data || json.results || json);
@@ -380,21 +445,27 @@ export async function getTopInstitutions() {
     { cik: "0000104569", name: "Vanguard Group Inc" },
     { cik: "0001364742", name: "BlackRock Inc." }
   ];
-  if (!process.env.FMP_API_KEY) return mockData;
+  if (!API_KEY) return mockData;
 
   try {
     const res = await fetch(
-      `${BASE_URL}/institutional-holders-lists?apikey=${process.env.FMP_API_KEY}`,
+      `${BASE_URL}/institutional-holders-lists?apikey=${API_KEY}`,
       { next: { revalidate: 86400 } }
     );
 
-    if (!res.ok) throw new Error("Failed to fetch top institutions list");
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch top institutions list`);
+        return mockData;
+      }
+      throw new Error("Failed to fetch top institutions list");
+    }
 
     const data = await res.json();
     if (!Array.isArray(data)) throw new Error(`Unexpected top-institutions response: ${JSON.stringify(data)}`);
     return data as { cik: string; name: string }[];
   } catch (error) {
-    console.error("Error fetching top institutions:", error);
+    console.error("Error fetching top institutions list:", error);
     return mockData;
   }
 }
@@ -408,15 +479,21 @@ export async function getHouseTrades() {
     { disclosureYear: "2024", disclosureDate: "2024-02-20", transactionDate: "2024-02-15", owner: "Self", ticker: "MSFT", assetDescription: "Microsoft Corp", type: "Purchase", amount: "$1,001 - $15,000", representative: "Ro Khanna", district: "CA-17", link: "#", capitalGainsOver200USD: false },
     { disclosureYear: "2024", disclosureDate: "2024-02-18", transactionDate: "2024-02-10", owner: "Joint", ticker: "AAPL", assetDescription: "Apple Inc", type: "Sale", amount: "$15,001 - $50,000", representative: "Michael McCaul", district: "TX-10", link: "#", capitalGainsOver200USD: true }
   ];
-  if (!process.env.FMP_API_KEY) return mockData;
+  if (!API_KEY) return mockData;
 
   try {
     const res = await fetch(
-      `https://financialmodelingprep.com/api/v4/house-disclosure?limit=100&apikey=${process.env.FMP_API_KEY}`,
+      `https://financialmodelingprep.com/api/v4/house-disclosure?limit=100&apikey=${API_KEY}`,
       { next: { revalidate: 3600 } } // Cache 1 hr
     );
 
-    if (!res.ok) throw new Error("Failed to fetch house trades");
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch house trades`);
+        return mockData;
+      }
+      throw new Error("Failed to fetch house trades");
+    }
 
     const data = await res.json();
     if (!Array.isArray(data)) throw new Error(`Unexpected house-trades response: ${JSON.stringify(data)}`);
@@ -449,7 +526,7 @@ export async function getEarningsCalendar() {
     { date: "2024-02-25", symbol: "NVDA", eps: null, epsEstimated: 4.5, time: "amc", revenue: null, revenueEstimated: 20000000000, fiscalDateEnding: "2024-01-31", updatedFromDate: "2024-02-01" },
     { date: "2024-02-26", symbol: "CRM", eps: null, epsEstimated: 2.1, time: "amc", revenue: null, revenueEstimated: 8500000000, fiscalDateEnding: "2024-01-31", updatedFromDate: "2024-02-01" }
   ];
-  if (!process.env.FMP_API_KEY) return mockData;
+  if (!API_KEY) return mockData;
 
   try {
     const from = new Date();
@@ -459,11 +536,17 @@ export async function getEarningsCalendar() {
     const fmt = (d: Date) => d.toISOString().split("T")[0];
 
     const res = await fetch(
-      `${BASE_URL}/earning_calendar?from=${fmt(from)}&to=${fmt(to)}&apikey=${process.env.FMP_API_KEY}`,
+      `${BASE_URL}/earning_calendar?from=${fmt(from)}&to=${fmt(to)}&apikey=${API_KEY}`,
       { next: { revalidate: 3600 } } // Cache 1 hr
     );
 
-    if (!res.ok) throw new Error("Failed to fetch earnings calendar");
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch earnings calendar`);
+        return mockData;
+      }
+      throw new Error("Failed to fetch earnings calendar");
+    }
 
     const data = await res.json();
     if (!Array.isArray(data)) throw new Error(`Unexpected earnings-calendar response: ${JSON.stringify(data)}`);
@@ -494,15 +577,21 @@ export async function getMarketNews(limit: number = 10) {
     { symbol: "AAPL", publishedDate: "2024-02-20 10:00:00", title: "Apple announces new product", image: "", site: "Bloomberg", text: "Apple has announced a new product today...", url: "#" },
     { symbol: "TSLA", publishedDate: "2024-02-20 09:30:00", title: "Tesla sales surge", image: "", site: "CNBC", text: "Tesla sales have surged in the last quarter...", url: "#" }
   ];
-  if (!process.env.FMP_API_KEY) return mockData.slice(0, limit);
+  if (!API_KEY) return mockData.slice(0, limit);
 
   try {
     const res = await fetch(
-      `${BASE_URL}/stock_news?limit=${limit}&apikey=${process.env.FMP_API_KEY}`,
+      `${BASE_URL}/stock_news?limit=${limit}&apikey=${API_KEY}`,
       { next: { revalidate: 900 } } // Cache 15 min
     );
 
-    if (!res.ok) throw new Error("Failed to fetch market news");
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch market news`);
+        return mockData.slice(0, limit);
+      }
+      throw new Error("Failed to fetch market news");
+    }
 
     const data = await res.json();
     if (!Array.isArray(data)) throw new Error(`Unexpected market-news response: ${JSON.stringify(data)}`);
@@ -550,14 +639,20 @@ export async function getCompanyProfile(symbol: string): Promise<{
     city: "Cupertino",
     state: "CA",
   };
-  if (!process.env.FMP_API_KEY) return mockData;
+  if (!API_KEY) return mockData;
 
   try {
-    const res = await fetch(`${BASE_URL}/profile/${symbol}?apikey=${process.env.FMP_API_KEY}`, {
+    const res = await fetch(`${BASE_URL}/profile/${symbol}?apikey=${API_KEY}`, {
       next: { revalidate: 86400 },
     });
 
-    if (!res.ok) throw new Error(`Failed to fetch profile for ${symbol}`);
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch profile for ${symbol}`);
+        return mockData;
+      }
+      throw new Error(`Failed to fetch profile for ${symbol}`);
+    }
 
     const data = await res.json();
     if (!Array.isArray(data) || !data[0]) return mockData;
@@ -575,7 +670,7 @@ export async function getCompanyProfile(symbol: string): Promise<{
       state: p.state || "",
     };
   } catch (error) {
-    console.error(`Error fetching company profile for ${symbol}:`, error);
+    console.error(`Error fetching profile for ${symbol}:`, error);
     return mockData;
   }
 }
@@ -603,15 +698,21 @@ export async function getTickerNews(
     { title: `${symbol} News 1`, url: "#", publishedDate: "2024-02-20", site: "News Site", image: "", text: "Some news text..." },
     { title: `${symbol} News 2`, url: "#", publishedDate: "2024-02-19", site: "News Site", image: "", text: "Some news text..." }
   ];
-  if (!process.env.FMP_API_KEY) return mockData.slice(0, limit);
+  if (!API_KEY) return mockData.slice(0, limit);
 
   try {
     const res = await fetch(
-      `${BASE_URL}/stock_news?tickers=${symbol}&limit=${limit}&apikey=${process.env.FMP_API_KEY}`,
+      `${BASE_URL}/stock_news?tickers=${symbol}&limit=${limit}&apikey=${API_KEY}`,
       { next: { revalidate: 900 } }
     );
 
-    if (!res.ok) throw new Error(`Failed to fetch news for ${symbol}`);
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch news for ${symbol}`);
+        return mockData.slice(0, limit);
+      }
+      throw new Error(`Failed to fetch news for ${symbol}`);
+    }
 
     const data = await res.json();
     if (!Array.isArray(data)) return mockData.slice(0, limit);
@@ -643,15 +744,21 @@ export async function getAnalystRatings(symbol: string): Promise<{
   date: string;
 } | null> {
   const mockData = { strongBuy: 10, buy: 15, hold: 5, sell: 2, strongSell: 1, date: "2024-02-20" };
-  if (!process.env.FMP_API_KEY) return mockData;
+  if (!API_KEY) return mockData;
 
   try {
     const res = await fetch(
-      `${BASE_URL}/analyst-stock-recommendations/${symbol}?apikey=${process.env.FMP_API_KEY}`,
+      `${BASE_URL}/analyst-stock-recommendations/${symbol}?apikey=${API_KEY}`,
       { next: { revalidate: 86400 } }
     );
 
-    if (!res.ok) throw new Error(`Failed to fetch analyst ratings for ${symbol}`);
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch analyst ratings for ${symbol}`);
+        return mockData;
+      }
+      throw new Error(`Failed to fetch analyst ratings for ${symbol}`);
+    }
 
     const data = await res.json();
     if (!Array.isArray(data) || !data[0]) return mockData;
@@ -683,15 +790,21 @@ export async function getPriceTarget(symbol: string): Promise<{
   lastDate: string;
 } | null> {
   const mockData = { targetConsensus: 200, targetHigh: 250, targetLow: 150, targetMedian: 190, lastDate: "2024-02-20" };
-  if (!process.env.FMP_API_KEY) return mockData;
+  if (!API_KEY) return mockData;
 
   try {
     const res = await fetch(
-      `https://financialmodelingprep.com/api/v4/price-target-summary?symbol=${symbol}&apikey=${process.env.FMP_API_KEY}`,
+      `https://financialmodelingprep.com/api/v4/price-target-summary?symbol=${symbol}&apikey=${API_KEY}`,
       { next: { revalidate: 86400 } }
     );
 
-    if (!res.ok) throw new Error(`Failed to fetch price target for ${symbol}`);
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        console.warn(`FMP API key invalid/unauthorized. Using mock data for: Failed to fetch price target for ${symbol}`);
+        return mockData;
+      }
+      throw new Error(`Failed to fetch price target for ${symbol}`);
+    }
 
     const data = await res.json();
     // FMP returns an array or single object depending on endpoint version
@@ -714,10 +827,10 @@ export async function getPriceTarget(symbol: string): Promise<{
  * Fetches historical daily prices for a given symbol.
  */
 export async function getHistoricalPrices(symbol: string) {
-  if (!process.env.FMP_API_KEY) return [];
+  if (!API_KEY) return [];
   
   try {
-    const res = await fetch(`${BASE_URL}/historical-price-full/${symbol}?apikey=${process.env.FMP_API_KEY}`, {
+    const res = await fetch(`${BASE_URL}/historical-price-full/${symbol}?apikey=${API_KEY}`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
     });
     
@@ -742,12 +855,12 @@ export async function searchSymbols(query: string) {
     { symbol: "AAPL", name: "Apple Inc.", stockExchange: "NASDAQ", exchangeShortName: "NASDAQ" },
     { symbol: "MSFT", name: "Microsoft Corporation", stockExchange: "NASDAQ", exchangeShortName: "NASDAQ" }
   ];
-  if (!process.env.FMP_API_KEY) return mockData;
+  if (!API_KEY) return mockData;
   if (!query.trim()) return [];
   
   try {
     const res = await fetch(
-      `${BASE_URL}/search?query=${encodeURIComponent(query)}&limit=10&apikey=${process.env.FMP_API_KEY}`,
+      `${BASE_URL}/search?query=${encodeURIComponent(query)}&limit=10&apikey=${API_KEY}`,
       { next: { revalidate: 0 } }
     );
     if (!res.ok) throw new Error("Failed to search symbols");
@@ -777,10 +890,10 @@ const getMockSectorPerformance = () => [
  * Fetches sector performance.
  */
 export async function getSectorPerformance() {
-  if (!process.env.FMP_API_KEY) return getMockSectorPerformance();
+  if (!API_KEY) return getMockSectorPerformance();
   
   try {
-    const res = await fetch(`${BASE_URL}/sector-performance?apikey=${process.env.FMP_API_KEY}`, {
+    const res = await fetch(`${BASE_URL}/sector-performance?apikey=${API_KEY}`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
     });
     
@@ -807,10 +920,10 @@ const getMockIncomeStatement = () => [
  * Fetches the last 4 annual income statements for a given symbol.
  */
 export async function getIncomeStatement(symbol: string) {
-  if (!process.env.FMP_API_KEY) return getMockIncomeStatement();
+  if (!API_KEY) return getMockIncomeStatement();
   
   try {
-    const res = await fetch(`${BASE_URL}/income-statement/${symbol}?limit=4&apikey=${process.env.FMP_API_KEY}`, {
+    const res = await fetch(`${BASE_URL}/income-statement/${symbol}?limit=4&apikey=${API_KEY}`, {
       next: { revalidate: 86400 }, // Cache for 24 hours
     });
     

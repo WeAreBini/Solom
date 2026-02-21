@@ -11,4 +11,4 @@ RUN apt-get update && apt-get install -y curl unzip \
   && mv supabase /usr/local/bin/ \
   && rm supabase.tar.gz
 
-ENTRYPOINT supabase db push --debug --yes --db-url $DB_PRIVATE_CONNECTION_STRING && npm i && npm run dev
+ENTRYPOINT supabase db push --debug --yes --db-url "${DB_PRIVATE_CONNECTION_STRING}?sslmode=disable" && npm i && npm run dev
