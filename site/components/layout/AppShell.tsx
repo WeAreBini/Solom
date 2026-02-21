@@ -15,13 +15,13 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen bg-background text-foreground selection:bg-primary/20">
       <Sidebar />
-      <div className="flex flex-col flex-1 w-full md:pl-0">
+      <div className="flex flex-col flex-1 w-full min-w-0">
         <TopNav />
         <main
           id="main-content"
-          className="flex-1 p-4 md:p-6 pb-20 md:pb-6 overflow-x-hidden animate-fade-in"
+          className="flex-1 p-4 md:p-6 pb-20 md:pb-6 overflow-x-hidden animate-fade-in w-full mx-auto"
         >
           {children}
         </main>

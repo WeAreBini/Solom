@@ -1,13 +1,13 @@
 /**
  * @ai-context Ticker Detail Page — comprehensive stock view with chart, stats, profile, ratings, news.
  * Server Component with Suspense streaming. Dynamic metadata for SEO.
- * @ai-related components/finance/TradingViewChart.tsx, components/finance/PriceDisplay.tsx
+ * @ai-related components/finance/StockChart.tsx, components/finance/PriceDisplay.tsx
  * @ai-related components/finance/GainLossBadge.tsx, components/finance/NewsCard.tsx
  * @ai-related app/actions/fmp.ts
  */
 import React, { Suspense } from 'react';
 import { PriceDisplay } from '@/components/finance/PriceDisplay';
-import { TradingViewChart } from '@/components/finance/TradingViewChart';
+import { StockChart } from '@/components/finance/StockChart';
 import { GainLossBadge } from '@/components/finance/GainLossBadge';
 import { NewsCard } from '@/components/finance/NewsCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,7 +80,7 @@ function TickerSkeleton() {
 /** Reusable stat card with label + value. */
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <Card>
+    <Card className="glass-card">
       <CardHeader className="pb-2">
         <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
           {label}
@@ -173,38 +173,34 @@ async function TickerContent({ symbol }: { symbol: string }) {
       </div>
 
       {/* ----------------------------------------------------------------- */}
-      {/* Chart */}
+      {/* Main Grid Layout */}
       {/* ----------------------------------------------------------------- */}
-      <Card className="w-full h-[400px] p-4">
-        <TradingViewChart data={chartData} type="line" />
-      </Card>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Left column: Chart + Stats + Profile — 2/3 width */}
+        <div className="xl:col-span-2 space-y-6">
+          {/* Chart */}
+          <Card className="w-full h-[400px] p-4 bg-zinc-950 dark:bg-black border-zinc-800 glass-card">
+            <StockChart data={chartData} />
+          </Card>
 
-      {/* ----------------------------------------------------------------- */}
-      {/* Key Statistics */}
-      {/* ----------------------------------------------------------------- */}
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight mb-4">Key Statistics</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label="Market Cap" value={formatLargeNumber(quote.marketCap)} />
-          <StatCard label="P/E Ratio" value={quote.pe != null ? (quote.pe as number).toFixed(2) : 'N/A'} />
-          <StatCard label="EPS" value={quote.eps != null ? `$${(quote.eps as number).toFixed(2)}` : 'N/A'} />
-          <StatCard label="Shares Out" value={formatLargeNumber(quote.sharesOutstanding)} />
-          <StatCard label="Open" value={quote.open != null ? `$${(quote.open as number).toFixed(2)}` : 'N/A'} />
-          <StatCard label="Prev Close" value={quote.previousClose != null ? `$${(quote.previousClose as number).toFixed(2)}` : 'N/A'} />
-          <StatCard label="Day Range" value={`${quote.dayLow?.toFixed(2) ?? '—'} / ${quote.dayHigh?.toFixed(2) ?? '—'}`} />
-          <StatCard label="52W Range" value={`${quote.yearLow?.toFixed(2) ?? '—'} / ${quote.yearHigh?.toFixed(2) ?? '—'}`} />
-        </div>
-      </div>
+          {/* Key Statistics */}
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight mb-4">Key Statistics</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label="Market Cap" value={formatLargeNumber(quote.marketCap)} />
+              <StatCard label="P/E Ratio" value={quote.pe != null ? (quote.pe as number).toFixed(2) : 'N/A'} />
+              <StatCard label="EPS" value={quote.eps != null ? `$${(quote.eps as number).toFixed(2)}` : 'N/A'} />
+              <StatCard label="Shares Out" value={formatLargeNumber(quote.sharesOutstanding)} />
+              <StatCard label="Open" value={quote.open != null ? `$${(quote.open as number).toFixed(2)}` : 'N/A'} />
+              <StatCard label="Prev Close" value={quote.previousClose != null ? `$${(quote.previousClose as number).toFixed(2)}` : 'N/A'} />
+              <StatCard label="Day Range" value={`${quote.dayLow?.toFixed(2) ?? '—'} / ${quote.dayHigh?.toFixed(2) ?? '—'}`} />
+              <StatCard label="52W Range" value={`${quote.yearLow?.toFixed(2) ?? '—'} / ${quote.yearHigh?.toFixed(2) ?? '—'}`} />
+            </div>
+          </div>
 
-      {/* ----------------------------------------------------------------- */}
-      {/* Main content: Profile + Ratings | News */}
-      {/* ----------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column: Profile + Ratings — 2/3 width */}
-        <div className="lg:col-span-2 space-y-6">
           {/* Company Profile */}
           {profile && (
-            <Card>
+            <Card className="glass-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
@@ -234,7 +230,7 @@ async function TickerContent({ symbol }: { symbol: string }) {
                   {profile.fullTimeEmployees && (
                     <div>
                       <p className="text-muted-foreground">Employees</p>
-                      <p className="font-medium">{Number(profile.fullTimeEmployees).toLocaleString()}</p>
+                      <p className="font-medium tabular-nums">{Number(profile.fullTimeEmployees).toLocaleString()}</p>
                     </div>
                   )}
                   {profile.website && (
@@ -255,11 +251,14 @@ async function TickerContent({ symbol }: { symbol: string }) {
               </CardContent>
             </Card>
           )}
+        </div>
 
+        {/* Right column: Ratings + Trading Info + News — 1/3 width */}
+        <div className="space-y-6">
           {/* Analyst Ratings + Price Target */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
             {ratings && ratingsTotal > 0 && (
-              <Card>
+              <Card className="glass-card">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <TrendingUp className="h-4 w-4" />
@@ -277,7 +276,7 @@ async function TickerContent({ symbol }: { symbol: string }) {
             )}
 
             {priceTarget && (
-              <Card>
+              <Card className="glass-card">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Target className="h-4 w-4" />
@@ -319,9 +318,9 @@ async function TickerContent({ symbol }: { symbol: string }) {
           </div>
 
           {/* Trading Info */}
-          <Card>
+          <Card className="glass-card">
             <CardContent className="pt-6">
-              <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+              <dl className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <dt className="text-muted-foreground">Exchange</dt>
                   <dd className="font-semibold">{quote.exchange || 'N/A'}</dd>
@@ -343,38 +342,38 @@ async function TickerContent({ symbol }: { symbol: string }) {
               </dl>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Right column: News — 1/3 width */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Newspaper className="h-4 w-4" />
-            Latest News
-          </h2>
-          {news && news.length > 0 ? (
-            <Card>
-              <CardContent className="p-0 divide-y">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {news.map((article: any, i: number) => (
-                  <NewsCard
-                    key={i}
-                    title={article.title}
-                    source={article.site}
-                    publishedDate={article.publishedDate}
-                    url={article.url}
-                    image={article.image}
-                    symbol={symbol}
-                  />
-                ))}
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                No recent news for {symbol}.
-              </CardContent>
-            </Card>
-          )}
+          {/* News */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Newspaper className="h-4 w-4" />
+              Latest News
+            </h2>
+            {news && news.length > 0 ? (
+              <Card className="glass-card">
+                <CardContent className="p-0 divide-y">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {news.map((article: any, i: number) => (
+                    <NewsCard
+                      key={i}
+                      title={article.title}
+                      source={article.site}
+                      publishedDate={article.publishedDate}
+                      url={article.url}
+                      image={article.image}
+                      symbol={symbol}
+                    />
+                  ))}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="glass-card">
+                <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                  No recent news for {symbol}.
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>

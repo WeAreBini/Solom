@@ -8,7 +8,7 @@
  * @ai-mutates useCommandStore (opens palette), useSidebarStore (mobile sheet)
  */
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   Bell,
@@ -20,6 +20,7 @@ import {
   User,
   Settings,
   LogOut,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCommandStore } from "@/lib/stores/command-store";
@@ -45,6 +46,7 @@ export function TopNav() {
   const { setMobileOpen } = useSidebarStore();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
+  const pathname = usePathname();
 
   /** Cycle through light → dark → system */
   const cycleTheme = () => {
@@ -57,10 +59,24 @@ export function TopNav() {
   const ThemeIcon =
     theme === "dark" ? Moon : theme === "light" ? Sun : Monitor;
 
+  /** Generate breadcrumbs from pathname */
+  const generateBreadcrumbs = () => {
+    if (!pathname || pathname === "/") return [{ name: "Dashboard", href: "/dashboard" }];
+    
+    const paths = pathname.split("/").filter(Boolean);
+    return paths.map((path, index) => {
+      const href = `/${paths.slice(0, index + 1).join("/")}`;
+      const name = path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, " ");
+      return { name, href };
+    });
+  };
+
+  const breadcrumbs = generateBreadcrumbs();
+
   return (
     <TooltipProvider delayDuration={200}>
       <header className="sticky top-0 z-40 flex h-14 w-full items-center justify-between gap-4 border-b backdrop-blur-lg bg-background/80 px-4 md:px-6">
-        {/* ── Left: mobile hamburger + logo ──────────────── */}
+        {/* ── Left: mobile hamburger + logo / desktop breadcrumbs ──────────────── */}
         <div className="flex items-center gap-3 md:hidden">
           <button
             onClick={() => setMobileOpen(true)}
@@ -74,23 +90,40 @@ export function TopNav() {
             className="flex items-center gap-1.5 font-bold text-lg"
           >
             <div className="w-6 h-6 bg-primary rounded-md flex items-center justify-center text-primary-foreground text-xs">
-              B
+              S
             </div>
             <span>Solom</span>
           </Link>
         </div>
 
-        {/* ── Center / right: search trigger ─────────────── */}
-        <div className="flex-1 flex justify-center md:justify-start md:max-w-md">
+        <div className="hidden md:flex items-center gap-1 text-sm font-medium text-muted-foreground">
+          {breadcrumbs.map((crumb, index) => (
+            <div key={crumb.href} className="flex items-center gap-1">
+              {index > 0 && <ChevronRight className="h-4 w-4 text-muted-foreground/50" />}
+              <Link
+                href={crumb.href}
+                className={cn(
+                  "hover:text-foreground transition-colors",
+                  index === breadcrumbs.length - 1 && "text-foreground font-semibold"
+                )}
+              >
+                {crumb.name}
+              </Link>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Center: search trigger ─────────────── */}
+        <div className="flex-1 flex justify-end md:justify-center md:max-w-2xl ml-auto md:ml-0 px-2 md:px-4">
           <button
             onClick={() => setOpen(true)}
-            className="flex w-full max-w-sm items-center gap-2 rounded-lg border bg-surface px-3 py-2 text-sm text-muted-foreground hover:bg-surface-hover transition-colors cursor-pointer"
+            className="flex w-full max-w-[200px] md:max-w-lg items-center gap-2 rounded-md border bg-surface/50 px-3 py-1.5 text-sm text-muted-foreground hover:bg-surface-hover transition-colors cursor-pointer shadow-sm"
           >
             <Search className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline truncate">
-              Search stocks, pages...
+              Search symbols, pages...
             </span>
-            <span className="sm:hidden">Search...</span>
+            <span className="sm:hidden">Search</span>
             <kbd className="ml-auto hidden sm:inline-flex h-5 items-center rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
               ⌘K
             </kbd>

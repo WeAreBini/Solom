@@ -4,7 +4,7 @@
  * @ai-related PriceDisplay.tsx, StockTickerCard.tsx
  */
 import React from 'react';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface GainLossBadgeProps {
@@ -37,16 +37,16 @@ export function GainLossBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 font-medium tabular-nums w-fit',
-        size === 'sm' ? 'text-xs' : 'text-xs',
-        isPositive && 'border-positive/20 bg-positive/10 text-positive',
-        isNegative && 'border-negative/20 bg-negative/10 text-negative',
+        'inline-flex items-center gap-1 rounded-md border font-medium tabular-nums w-fit transition-colors',
+        size === 'sm' ? 'text-[10px] px-1.5 py-0.5' : 'text-xs px-2 py-1',
+        isPositive && 'border-positive/30 bg-positive/15 text-positive shadow-sm shadow-positive/10',
+        isNegative && 'border-negative/30 bg-negative/15 text-negative shadow-sm shadow-negative/10',
         !isPositive && !isNegative && 'border-border bg-muted/50 text-muted-foreground',
         className
       )}
     >
-      {showIcon && isPositive && <TrendingUp className={iconSize} />}
-      {showIcon && isNegative && <TrendingDown className={iconSize} />}
+      {showIcon && isPositive && <ArrowUpRight className={iconSize} />}
+      {showIcon && isNegative && <ArrowDownRight className={iconSize} />}
       {showIcon && !isPositive && !isNegative && <Minus className={iconSize} />}
       <span>
         {isPositive ? '+' : isNegative ? '-' : ''}

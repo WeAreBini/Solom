@@ -1,10 +1,11 @@
 /**
  * @ai-context StockTickerCard — compact card showing stock price, change, and optional sparkline.
- * @ai-related PriceDisplay.tsx, GainLossBadge.tsx, SparklineChart.tsx
+ * @ai-related PriceDisplay.tsx, GainLossBadge.tsx, Sparkline.tsx
  */
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { GainLossBadge } from './GainLossBadge';
+import { Sparkline } from './Sparkline';
 import { cn } from '@/lib/utils';
 
 interface StockTickerCardProps {
@@ -15,6 +16,7 @@ interface StockTickerCardProps {
   changePercent?: number;
   currency?: string;
   className?: string;
+  sparkline?: number[];
 }
 
 export function StockTickerCard({
@@ -25,6 +27,7 @@ export function StockTickerCard({
   changePercent,
   currency = '$',
   className = '',
+  sparkline,
 }: StockTickerCardProps) {
   const pct = changePercent ?? (price - change !== 0 ? (change / (price - change)) * 100 : 0);
 
@@ -35,7 +38,7 @@ export function StockTickerCard({
         className
       )}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-4 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="font-mono text-sm font-bold uppercase tracking-wider text-foreground">
@@ -50,7 +53,14 @@ export function StockTickerCard({
           </div>
           <GainLossBadge value={pct} isPercentage size="sm" />
         </div>
-        <div className="mt-3 flex items-end justify-between">
+        
+        {sparkline && sparkline.length > 0 && (
+          <div className="h-10 w-full mt-1">
+            <Sparkline data={sparkline} width="100%" height="100%" />
+          </div>
+        )}
+
+        <div className="flex items-end justify-between mt-1">
           <span className="text-xl font-bold tabular-nums text-foreground">
             {currency}
             {price.toLocaleString(undefined, {
