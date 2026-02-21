@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 /**
  * @ai-context OrderTicket component for paper trading interface.
@@ -45,7 +46,7 @@ export function OrderTicket({ symbol, currentPrice, buyingPower }: OrderTicketPr
       price: orderType === "market" ? currentPrice : parsedLimitPrice,
       total: estimatedCost,
     });
-    alert(`Trade executed: ${orderAction.toUpperCase()} ${parsedShares} shares of ${symbol}`);
+    toast.success(`Trade executed: ${orderAction.toUpperCase()} ${parsedShares} shares of ${symbol}`);
   };
 
   return (

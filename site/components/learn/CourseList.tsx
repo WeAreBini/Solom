@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, BookOpen, Trophy, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 
 interface Module {
@@ -55,7 +55,6 @@ export function CourseList() {
   const [completedModules, setCompletedModules] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
-  const { toast } = useToast();
   const supabase = createClient();
 
   useEffect(() => {
@@ -103,15 +102,12 @@ export function CourseList() {
 
       setCompletedModules((prev) => new Set(prev).add(moduleId));
       
-      toast({
-        title: "Module Completed! 🎉",
+      toast.success("Module Completed! 🎉", {
         description: `You've earned $${reward} in paper trading balance.`,
       });
     } catch (error: unknown) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
       });
     } finally {
       setLoading(null);

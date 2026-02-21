@@ -45,8 +45,8 @@ export async function getQuotes(symbols: string[]) {
   if (!API_KEY) return symbols.map(s => ({ symbol: s, price: 150.0, changesPercentage: 1.5, change: 2.25, name: `${s} Inc.` }));
   if (!symbols.length) return [];
   
+  const symbolString = symbols.join(',');
   try {
-    const symbolString = symbols.join(',');
     const res = await fetch(`${BASE_URL}/quote/${symbolString}?apikey=${API_KEY}`, {
       next: { revalidate: 60 }, // Cache for 60 seconds
     });

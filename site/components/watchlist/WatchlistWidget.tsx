@@ -59,8 +59,6 @@ export function WatchlistWidget({ items }: WatchlistWidgetProps) {
                     <div className="w-20 h-8 hidden sm:block">
                       <Sparkline
                         data={item.sparklineData}
-                        color={isPositive ? "#10b981" : "#f43f5e"}
-                        strokeWidth={1.5}
                       />
                     </div>
                   )}

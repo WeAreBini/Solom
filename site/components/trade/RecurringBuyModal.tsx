@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CalendarClock, DollarSign } from "lucide-react";
+import { toast } from "sonner";
 
 interface RecurringBuyModalProps {
   symbol: string;
@@ -39,7 +40,7 @@ export function RecurringBuyModal({ symbol, currentPrice }: RecurringBuyModalPro
 
   const handleSave = () => {
     // In a real app, this would call an API to save the recurring buy
-    console.log(`Saved recurring buy: $${amount} of ${symbol} every ${frequency} on ${day}`);
+    toast.success(`Saved recurring buy: $${amount} of ${symbol} every ${frequency} on ${day}`);
     setIsOpen(false);
   };
 

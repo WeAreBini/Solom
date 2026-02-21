@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     // Example payload from FMP might contain price updates or news
     const { type, data } = body;
 
-    const supabase = await createAdminClient();
+    // const supabase = await createAdminClient();
 
     if (type === 'price_update') {
       // Process price update
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Webhook error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
