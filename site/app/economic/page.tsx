@@ -191,12 +191,12 @@ export default async function EconomicPage() {
       )}
 
       {/* Cards grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {indicators.map((ind) => {
           const Icon = ind.icon;
           return (
-            <Card key={ind.id} className="hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+            <Card key={ind.id} className="glass-card hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2 border-b bg-muted/10">
                 <div className="flex flex-col gap-1">
                   <CardTitle className="text-sm font-medium leading-tight">
                     {ind.label}
@@ -210,7 +210,7 @@ export default async function EconomicPage() {
                 </div>
               </CardHeader>
 
-              <CardContent className="flex flex-col gap-3">
+              <CardContent className="flex flex-col gap-3 pt-4">
                 {/* Latest value */}
                 <div className="text-2xl font-bold tracking-tight">
                   {ind.latestFormatted}

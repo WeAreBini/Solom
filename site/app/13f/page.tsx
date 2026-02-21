@@ -89,8 +89,8 @@ export default async function ThirteenFPage() {
 
       {/* Holdings card */}
       {!error && (
-        <Card>
-          <CardHeader>
+        <Card className="glass-card">
+          <CardHeader className="border-b bg-muted/10">
             <CardTitle>Portfolio Holdings</CardTitle>
             <CardDescription>
               {holdings.length} positions &bull; Total AUM:{" "}

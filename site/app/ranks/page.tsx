@@ -60,15 +60,15 @@ function LeaderboardList({
   stocks: MarketStock[];
 }) {
   return (
-    <Card className="flex-1">
-      <CardHeader className="pb-4">
+    <Card className="flex-1 glass-card">
+      <CardHeader className="pb-4 border-b bg-muted/10">
         <CardTitle className="flex items-center gap-2">
           <Icon className="h-5 w-5" />
           {title}
         </CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-1 px-4 pb-4">
+      <CardContent className="space-y-1 px-4 pb-4 pt-4">
         {stocks.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">No data available.</p>
         ) : (

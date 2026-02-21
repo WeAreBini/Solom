@@ -139,130 +139,132 @@ export default async function EarningsPage() {
       )}
 
       {/* ─── Date cards ──────────────────────────────────────────────────── */}
-      {sortedDates.map((date) => {
-        const events = grouped[date];
-        return (
-          <Card key={date}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">
-                {formatDateHeading(date)}
-              </CardTitle>
-              <CardDescription>
-                {events.length} {events.length === 1 ? 'company' : 'companies'} reporting
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40 text-muted-foreground">
-                    <th className="px-4 py-3 text-left font-medium">Symbol</th>
-                    <th className="px-4 py-3 text-right font-medium">EPS Est.</th>
-                    <th className="px-4 py-3 text-right font-medium">EPS Actual</th>
-                    <th className="px-4 py-3 text-right font-medium">Rev. Est.</th>
-                    <th className="px-4 py-3 text-right font-medium">Rev. Actual</th>
-                    <th className="px-4 py-3 text-center font-medium">Time</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {events.map((event, i) => {
-                    // Determine beat/miss only when both values are non-null
-                    const hasBeatMiss =
-                      event.eps !== null && event.epsEstimated !== null;
-                    const beat = hasBeatMiss && event.eps! > event.epsEstimated!;
-                    const miss = hasBeatMiss && event.eps! < event.epsEstimated!;
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {sortedDates.map((date) => {
+          const events = grouped[date];
+          return (
+            <Card key={date} className="glass-card overflow-hidden">
+              <CardHeader className="pb-3 border-b bg-muted/10">
+                <CardTitle className="text-base font-semibold">
+                  {formatDateHeading(date)}
+                </CardTitle>
+                <CardDescription>
+                  {events.length} {events.length === 1 ? 'company' : 'companies'} reporting
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/40 text-muted-foreground">
+                      <th className="px-4 py-3 text-left font-medium">Symbol</th>
+                      <th className="px-4 py-3 text-right font-medium">EPS Est.</th>
+                      <th className="px-4 py-3 text-right font-medium">EPS Actual</th>
+                      <th className="px-4 py-3 text-right font-medium">Rev. Est.</th>
+                      <th className="px-4 py-3 text-right font-medium">Rev. Actual</th>
+                      <th className="px-4 py-3 text-center font-medium">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {events.map((event, i) => {
+                      // Determine beat/miss only when both values are non-null
+                      const hasBeatMiss =
+                        event.eps !== null && event.epsEstimated !== null;
+                      const beat = hasBeatMiss && event.eps! > event.epsEstimated!;
+                      const miss = hasBeatMiss && event.eps! < event.epsEstimated!;
 
-                    const hasRevBeatMiss =
-                      event.revenue !== null && event.revenueEstimated !== null;
-                    const revBeat =
-                      hasRevBeatMiss && event.revenue! > event.revenueEstimated!;
-                    const revMiss =
-                      hasRevBeatMiss && event.revenue! < event.revenueEstimated!;
+                      const hasRevBeatMiss =
+                        event.revenue !== null && event.revenueEstimated !== null;
+                      const revBeat =
+                        hasRevBeatMiss && event.revenue! > event.revenueEstimated!;
+                      const revMiss =
+                        hasRevBeatMiss && event.revenue! < event.revenueEstimated!;
 
-                    return (
-                      <tr
-                        key={`${event.symbol}-${i}`}
-                        className="hover:bg-muted/30 transition-colors"
-                      >
-                        {/* Symbol */}
-                        <td className="px-4 py-3">
-                          <Link href={`/ticker/${event.symbol}`} className="font-mono font-semibold text-primary hover:underline">{event.symbol}</Link>
-                        </td>
+                      return (
+                        <tr
+                          key={`${event.symbol}-${i}`}
+                          className="hover:bg-muted/30 transition-colors"
+                        >
+                          {/* Symbol */}
+                          <td className="px-4 py-3">
+                            <Link href={`/ticker/${event.symbol}`} className="font-mono font-semibold text-primary hover:underline">{event.symbol}</Link>
+                          </td>
 
-                        {/* EPS Estimated */}
-                        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                          {fmtEps(event.epsEstimated)}
-                        </td>
+                          {/* EPS Estimated */}
+                          <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                            {fmtEps(event.epsEstimated)}
+                          </td>
 
-                        {/* EPS Actual with beat/miss badge */}
-                        <td className="px-4 py-3 text-right">
-                          {event.eps !== null ? (
-                            <span className="flex items-center justify-end gap-2">
-                              <span className="tabular-nums">{fmtEps(event.eps)}</span>
-                              {hasBeatMiss && (
-                                <Badge
-                                  variant={beat ? 'default' : 'destructive'}
-                                  className={
-                                    beat
-                                      ? 'bg-positive/15 text-positive border-positive/30 text-xs'
-                                      : miss
-                                      ? 'bg-negative/15 text-negative border-negative/30 text-xs'
-                                      : 'bg-muted text-muted-foreground text-xs'
-                                  }
-                                >
-                                  {beat ? 'Beat' : miss ? 'Miss' : 'Met'}
-                                </Badge>
-                              )}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </td>
+                          {/* EPS Actual with beat/miss badge */}
+                          <td className="px-4 py-3 text-right">
+                            {event.eps !== null ? (
+                              <span className="flex items-center justify-end gap-2">
+                                <span className="tabular-nums">{fmtEps(event.eps)}</span>
+                                {hasBeatMiss && (
+                                  <Badge
+                                    variant={beat ? 'default' : 'destructive'}
+                                    className={
+                                      beat
+                                        ? 'bg-positive/15 text-positive border-positive/30 text-xs'
+                                        : miss
+                                        ? 'bg-negative/15 text-negative border-negative/30 text-xs'
+                                        : 'bg-muted text-muted-foreground text-xs'
+                                    }
+                                  >
+                                    {beat ? 'Beat' : miss ? 'Miss' : 'Met'}
+                                  </Badge>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
 
-                        {/* Revenue Estimated */}
-                        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                          {fmtRevenue(event.revenueEstimated)}
-                        </td>
+                          {/* Revenue Estimated */}
+                          <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                            {fmtRevenue(event.revenueEstimated)}
+                          </td>
 
-                        {/* Revenue Actual with beat/miss badge */}
-                        <td className="px-4 py-3 text-right">
-                          {event.revenue !== null ? (
-                            <span className="flex items-center justify-end gap-2">
-                              <span className="tabular-nums">{fmtRevenue(event.revenue)}</span>
-                              {hasRevBeatMiss && (
-                                <Badge
-                                  variant={revBeat ? 'default' : 'destructive'}
-                                  className={
-                                    revBeat
-                                      ? 'bg-positive/15 text-positive border-positive/30 text-xs'
-                                      : revMiss
-                                      ? 'bg-negative/15 text-negative border-negative/30 text-xs'
-                                      : 'bg-muted text-muted-foreground text-xs'
-                                  }
-                                >
-                                  {revBeat ? 'Beat' : revMiss ? 'Miss' : 'Met'}
-                                </Badge>
-                              )}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </td>
+                          {/* Revenue Actual with beat/miss badge */}
+                          <td className="px-4 py-3 text-right">
+                            {event.revenue !== null ? (
+                              <span className="flex items-center justify-end gap-2">
+                                <span className="tabular-nums">{fmtRevenue(event.revenue)}</span>
+                                {hasRevBeatMiss && (
+                                  <Badge
+                                    variant={revBeat ? 'default' : 'destructive'}
+                                    className={
+                                      revBeat
+                                        ? 'bg-positive/15 text-positive border-positive/30 text-xs'
+                                        : revMiss
+                                        ? 'bg-negative/15 text-negative border-negative/30 text-xs'
+                                        : 'bg-muted text-muted-foreground text-xs'
+                                    }
+                                  >
+                                    {revBeat ? 'Beat' : revMiss ? 'Miss' : 'Met'}
+                                  </Badge>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
 
-                        {/* Reporting time */}
-                        <td className="px-4 py-3 text-center">
-                          <Badge variant="outline" className="text-xs">
-                            {formatTime(event.time)}
-                          </Badge>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        );
-      })}
+                          {/* Reporting time */}
+                          <td className="px-4 py-3 text-center">
+                            <Badge variant="outline" className="text-xs">
+                              {formatTime(event.time)}
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }
