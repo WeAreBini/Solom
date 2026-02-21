@@ -17,6 +17,22 @@ export interface ChartData {
   close?: number;
 }
 
+function getComputedColor(element: HTMLElement, variableName: string): string {
+  const value = getComputedStyle(element).getPropertyValue(variableName).trim();
+  if (!value) return '#000000';
+  const parts = value.split(' ').filter(Boolean);
+  if (parts.length >= 3) {
+    const temp = document.createElement('div');
+    temp.style.color = `hsl(${parts[0]}, ${parts[1]}, ${parts[2]})`;
+    temp.style.display = 'none';
+    document.body.appendChild(temp);
+    const computedColor = getComputedStyle(temp).color;
+    document.body.removeChild(temp);
+    return computedColor;
+  }
+  return value;
+}
+
 interface TradingViewChartProps {
   /** The data to display on the chart */
   data: ChartData[];
@@ -47,19 +63,19 @@ export function TradingViewChart({ data, type = 'line', className = '' }: Tradin
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: 'hsl(var(--muted-foreground))',
+        textColor: getComputedColor(chartContainerRef.current, '--muted-foreground'),
       },
       grid: {
-        vertLines: { color: 'hsl(var(--border))' },
-        horzLines: { color: 'hsl(var(--border))' },
+        vertLines: { color: getComputedColor(chartContainerRef.current, '--border') },
+        horzLines: { color: getComputedColor(chartContainerRef.current, '--border') },
       },
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
       timeScale: {
-        borderColor: 'hsl(var(--border))',
+        borderColor: getComputedColor(chartContainerRef.current, '--border'),
       },
       rightPriceScale: {
-        borderColor: 'hsl(var(--border))',
+        borderColor: getComputedColor(chartContainerRef.current, '--border'),
       },
     });
 
@@ -92,17 +108,17 @@ export function TradingViewChart({ data, type = 'line', className = '' }: Tradin
     // Add series based on type
     if (type === 'candlestick') {
       const candlestickSeries = chart.addCandlestickSeries({
-        upColor: 'hsl(var(--positive))',
-        downColor: 'hsl(var(--negative))',
+        upColor: getComputedColor(chartContainerRef.current, '--positive'),
+        downColor: getComputedColor(chartContainerRef.current, '--negative'),
         borderVisible: false,
-        wickUpColor: 'hsl(var(--positive))',
-        wickDownColor: 'hsl(var(--negative))',
+        wickUpColor: getComputedColor(chartContainerRef.current, '--positive'),
+        wickDownColor: getComputedColor(chartContainerRef.current, '--negative'),
       });
       candlestickSeries.setData(formattedData as import('lightweight-charts').CandlestickData[]);
       seriesRef.current = candlestickSeries as unknown as ISeriesApi<"Line" | "Candlestick">;
     } else {
       const lineSeries = chart.addLineSeries({
-        color: 'hsl(var(--primary))',
+        color: getComputedColor(chartContainerRef.current, '--primary'),
         lineWidth: 2,
       });
       lineSeries.setData(formattedData as import('lightweight-charts').LineData[]);
