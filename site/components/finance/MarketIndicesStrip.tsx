@@ -50,9 +50,9 @@ export async function MarketIndicesStrip() {
             <span
               className={`flex items-center gap-0.5 font-medium ${
                 isPositive
-                  ? 'text-positive'
+                  ? 'text-glow-positive'
                   : isNegative
-                  ? 'text-negative'
+                  ? 'text-glow-negative'
                   : 'text-muted-foreground'
               }`}
             >

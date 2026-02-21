@@ -145,7 +145,23 @@
     @apply bg-white/10 backdrop-blur-md border border-white/20 shadow-glass dark:bg-black/20 dark:border-white/10 dark:shadow-glass-dark;
   }
   .glass-card {
-    @apply bg-card/80 backdrop-blur-lg border border-border shadow-sm;
+    @apply bg-card/80 backdrop-blur-lg border border-border shadow-sm relative overflow-hidden transition-all duration-300;
+  }
+  .glass-card:hover {
+    @apply -translate-y-1 shadow-lg shadow-primary/10 border-primary/30;
+  }
+  .text-glow-positive {
+    @apply text-positive;
+    text-shadow: 0 0 10px hsl(var(--positive) / 0.5), 0 0 20px hsl(var(--positive) / 0.3);
+  }
+  .text-glow-negative {
+    @apply text-negative;
+    text-shadow: 0 0 10px hsl(var(--negative) / 0.5), 0 0 20px hsl(var(--negative) / 0.3);
+  }
+  .bg-breathing-gradient {
+    background: linear-gradient(-45deg, hsl(var(--background)), hsl(var(--muted)), hsl(var(--background)), hsl(var(--secondary)));
+    background-size: 400% 400%;
+    animation: breathing-gradient 15s ease infinite;
   }
   .text-balance {
     text-wrap: balance;
@@ -162,6 +178,12 @@
   .data-value-negative {
     @apply text-negative font-medium;
   }
+}
+
+@keyframes breathing-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* ── Shimmer skeleton animation ─────────────────────────── */

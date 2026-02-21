@@ -129,38 +129,27 @@ export default async function DashboardPage() {
           <div className="lg:col-span-8 flex flex-col gap-6">
             {/* Portfolio Metrics */}
             <div className="grid gap-4 md:grid-cols-3">
-              <Card className="glass-card hover:shadow-md">
+              <Card className="glass-card md:col-span-3 bg-breathing-gradient border-primary/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Current Value</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Portfolio Value</CardTitle>
+                  <TrendingUp className="h-5 w-5 text-primary" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold tabular-nums">${fmt(currentValue)}</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Cost basis: ${fmt(totalInvested)}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="glass-card hover:shadow-md">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Return</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-1">
-                  <div className="text-3xl font-bold tabular-nums">
-                    {totalReturn < 0 ? '-' : ''}${fmt(Math.abs(totalReturn))}
-                  </div>
+                <CardContent className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-4">
                   <div>
-                    <GainLossBadge value={returnPct} isPercentage />
+                    <div className="text-6xl md:text-7xl font-extrabold tabular-nums tracking-tighter drop-shadow-sm">
+                      ${fmt(currentValue)}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2 font-medium">
+                      Cost basis: ${fmt(totalInvested)}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-              <Card className="glass-card hover:shadow-md">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Holdings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold tabular-nums">{portfolioItems.length}</div>
-                  <p className="text-xs text-muted-foreground mt-1">positions tracked</p>
+                  <div className="flex flex-col items-start md:items-end gap-2 bg-background/40 p-4 rounded-xl backdrop-blur-md border border-white/10">
+                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Return</div>
+                    <div className={`text-4xl font-bold tabular-nums tracking-tight ${totalReturn >= 0 ? 'text-glow-positive' : 'text-glow-negative'}`}>
+                      {totalReturn < 0 ? '-' : '+'}${fmt(Math.abs(totalReturn))}
+                    </div>
+                    <GainLossBadge value={returnPct} isPercentage className="text-lg px-3 py-1 shadow-sm" />
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -168,7 +157,14 @@ export default async function DashboardPage() {
             {/* Holdings */}
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold tracking-tight">Holdings</h2>
+                <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2">
+                  Holdings
+                  {!isEmpty && (
+                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      {portfolioItems.length}
+                    </span>
+                  )}
+                </h2>
                 {!isEmpty && (
                   <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
                     <Link href="/watchlist">View Watchlist <ArrowRight className="ml-1 h-3 w-3" /></Link>

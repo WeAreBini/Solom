@@ -71,7 +71,7 @@ export function StockTickerCard({
           <span
             className={cn(
               'text-xs font-medium tabular-nums',
-              change >= 0 ? 'text-positive' : 'text-negative'
+              change >= 0 ? 'text-glow-positive' : 'text-glow-negative'
             )}
           >
             {change >= 0 ? '+' : ''}

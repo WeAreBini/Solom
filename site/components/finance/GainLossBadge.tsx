@@ -39,8 +39,8 @@ export function GainLossBadge({
       className={cn(
         'inline-flex items-center gap-1 rounded-md border font-medium tabular-nums w-fit transition-colors',
         size === 'sm' ? 'text-[10px] px-1.5 py-0.5' : 'text-xs px-2 py-1',
-        isPositive && 'border-positive/30 bg-positive/15 text-positive shadow-sm shadow-positive/10',
-        isNegative && 'border-negative/30 bg-negative/15 text-negative shadow-sm shadow-negative/10',
+        isPositive && 'border-positive/30 bg-positive/15 text-positive shadow-sm shadow-positive/10 text-glow-positive',
+        isNegative && 'border-negative/30 bg-negative/15 text-negative shadow-sm shadow-negative/10 text-glow-negative',
         !isPositive && !isNegative && 'border-border bg-muted/50 text-muted-foreground',
         className
       )}

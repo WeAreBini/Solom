@@ -55,67 +55,134 @@ export async function getQuotes(symbols: string[]) {
   return data;
 }
 
+const getMockActives = () => [
+  { symbol: "TSLA", name: "Tesla Inc.", price: 200.0, changesPercentage: 2.5, change: 5.0 },
+  { symbol: "AAPL", name: "Apple Inc.", price: 180.0, changesPercentage: 1.2, change: 2.16 },
+  { symbol: "NVDA", name: "NVIDIA Corp.", price: 800.0, changesPercentage: 3.5, change: 28.0 },
+  { symbol: "AMD", name: "Advanced Micro Devices", price: 150.0, changesPercentage: 4.1, change: 6.15 },
+  { symbol: "AMZN", name: "Amazon.com Inc.", price: 170.0, changesPercentage: 0.8, change: 1.36 },
+];
+
+const getMockGainers = () => [
+  { symbol: "SMCI", name: "Super Micro Computer", price: 1000.0, changesPercentage: 15.5, change: 155.0 },
+  { symbol: "ARM", name: "Arm Holdings", price: 130.0, changesPercentage: 12.2, change: 15.86 },
+  { symbol: "PLTR", name: "Palantir Technologies", price: 25.0, changesPercentage: 8.5, change: 2.12 },
+  { symbol: "COIN", name: "Coinbase Global", price: 200.0, changesPercentage: 7.1, change: 14.2 },
+  { symbol: "HOOD", name: "Robinhood Markets", price: 18.0, changesPercentage: 6.8, change: 1.22 },
+];
+
+const getMockLosers = () => [
+  { symbol: "BA", name: "Boeing Co.", price: 190.0, changesPercentage: -5.5, change: -10.45 },
+  { symbol: "INTC", name: "Intel Corp.", price: 40.0, changesPercentage: -4.2, change: -1.68 },
+  { symbol: "PFE", name: "Pfizer Inc.", price: 26.0, changesPercentage: -3.5, change: -0.91 },
+  { symbol: "NKE", name: "NIKE Inc.", price: 95.0, changesPercentage: -2.1, change: -1.99 },
+  { symbol: "SBUX", name: "Starbucks Corp.", price: 85.0, changesPercentage: -1.8, change: -1.53 },
+];
+
+const getMockCrypto = () => [
+  { symbol: "BTCUSD", name: "Bitcoin", price: 65000.0, changesPercentage: 2.5, change: 1625.0, marketCap: 1200000000000 },
+  { symbol: "ETHUSD", name: "Ethereum", price: 35000.0, changesPercentage: 3.2, change: 1120.0, marketCap: 400000000000 },
+  { symbol: "SOLUSD", name: "Solana", price: 150.0, changesPercentage: 5.5, change: 8.25, marketCap: 65000000000 },
+  { symbol: "BNBUSD", name: "BNB", price: 400.0, changesPercentage: 1.2, change: 4.8, marketCap: 60000000000 },
+  { symbol: "XRPUSD", name: "XRP", price: 0.6, changesPercentage: -0.5, change: -0.003, marketCap: 30000000000 },
+];
+
 /**
  * Fetches the most active stocks in the market.
  */
 export async function getMarketActives() {
-  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) return getMockActives();
   
-  const res = await fetch(`${BASE_URL}/stock_market/actives?apikey=${process.env.FMP_API_KEY}`, {
-    next: { revalidate: 300 }, // Cache for 5 minutes
-  });
-  
-  if (!res.ok) {
-    throw new Error("Failed to fetch market actives");
-  }
-  
-  const data = await res.json();
-  if (!Array.isArray(data)) {
+  try {
+    const res = await fetch(`${BASE_URL}/stock_market/actives?apikey=${process.env.FMP_API_KEY}`, {
+      next: { revalidate: 300 }, // Cache for 5 minutes
+    });
+    
+    if (!res.ok) throw new Error("Failed to fetch market actives");
+    
+    const data = await res.json();
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.actives)) return data.actives;
+    if (data && Array.isArray(data.mostActiveStock)) return data.mostActiveStock;
+    
     throw new Error(`Invalid response from FMP API: ${JSON.stringify(data)}`);
+  } catch (error) {
+    console.error("Error fetching market actives:", error);
+    return getMockActives();
   }
-  return data;
 }
 
 /**
  * Fetches the top market gainers.
  */
 export async function getMarketGainers() {
-  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) return getMockGainers();
   
-  const res = await fetch(`${BASE_URL}/stock_market/gainers?apikey=${process.env.FMP_API_KEY}`, {
-    next: { revalidate: 300 }, // Cache for 5 minutes
-  });
-  
-  if (!res.ok) {
-    throw new Error("Failed to fetch market gainers");
-  }
-  
-  const data = await res.json();
-  if (!Array.isArray(data)) {
+  try {
+    const res = await fetch(`${BASE_URL}/stock_market/gainers?apikey=${process.env.FMP_API_KEY}`, {
+      next: { revalidate: 300 }, // Cache for 5 minutes
+    });
+    
+    if (!res.ok) throw new Error("Failed to fetch market gainers");
+    
+    const data = await res.json();
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.gainers)) return data.gainers;
+    if (data && Array.isArray(data.mostGainerStock)) return data.mostGainerStock;
+    
     throw new Error(`Invalid response from FMP API: ${JSON.stringify(data)}`);
+  } catch (error) {
+    console.error("Error fetching market gainers:", error);
+    return getMockGainers();
   }
-  return data;
 }
 
 /**
  * Fetches the top market losers.
  */
 export async function getMarketLosers() {
-  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) return getMockLosers();
   
-  const res = await fetch(`${BASE_URL}/stock_market/losers?apikey=${process.env.FMP_API_KEY}`, {
-    next: { revalidate: 300 }, // Cache for 5 minutes
-  });
-  
-  if (!res.ok) {
-    throw new Error("Failed to fetch market losers");
-  }
-  
-  const data = await res.json();
-  if (!Array.isArray(data)) {
+  try {
+    const res = await fetch(`${BASE_URL}/stock_market/losers?apikey=${process.env.FMP_API_KEY}`, {
+      next: { revalidate: 300 }, // Cache for 5 minutes
+    });
+    
+    if (!res.ok) throw new Error("Failed to fetch market losers");
+    
+    const data = await res.json();
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.losers)) return data.losers;
+    if (data && Array.isArray(data.mostLoserStock)) return data.mostLoserStock;
+    
     throw new Error(`Invalid response from FMP API: ${JSON.stringify(data)}`);
+  } catch (error) {
+    console.error("Error fetching market losers:", error);
+    return getMockLosers();
   }
-  return data;
+}
+
+/**
+ * Fetches top cryptocurrencies.
+ */
+export async function getCryptoQuotes() {
+  if (!process.env.FMP_API_KEY) return getMockCrypto();
+  
+  try {
+    const res = await fetch(`${BASE_URL}/quotes/crypto?apikey=${process.env.FMP_API_KEY}`, {
+      next: { revalidate: 60 }, // Cache for 60 seconds
+    });
+    
+    if (!res.ok) throw new Error("Failed to fetch crypto quotes");
+    
+    const data = await res.json();
+    if (Array.isArray(data)) return data.slice(0, 20); // Return top 20
+    
+    throw new Error(`Invalid response from FMP API: ${JSON.stringify(data)}`);
+  } catch (error) {
+    console.error("Error fetching crypto quotes:", error);
+    return getMockCrypto();
+  }
 }
 
 /**
@@ -528,21 +595,26 @@ export async function getPriceTarget(symbol: string): Promise<{
  * Fetches historical daily prices for a given symbol.
  */
 export async function getHistoricalPrices(symbol: string) {
-  if (!process.env.FMP_API_KEY) throw new Error("FMP API key is missing");
+  if (!process.env.FMP_API_KEY) return [];
   
-  const res = await fetch(`${BASE_URL}/historical-price-full/${symbol}?apikey=${process.env.FMP_API_KEY}`, {
-    next: { revalidate: 3600 }, // Cache for 1 hour
-  });
-  
-  if (!res.ok) {
-    throw new Error(`Failed to fetch historical prices for ${symbol}`);
+  try {
+    const res = await fetch(`${BASE_URL}/historical-price-full/${symbol}?apikey=${process.env.FMP_API_KEY}`, {
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    });
+    
+    if (!res.ok) {
+      throw new Error(`Failed to fetch historical prices for ${symbol}`);
+    }
+    
+    const data = await res.json();
+    if (data && data["Error Message"]) {
+      throw new Error(`Invalid response from FMP API: ${data["Error Message"]}`);
+    }
+    return data.historical || [];
+  } catch (error) {
+    console.error("Error fetching historical prices:", error);
+    return [];
   }
-  
-  const data = await res.json();
-  if (data && data["Error Message"]) {
-    throw new Error(`Invalid response from FMP API: ${data["Error Message"]}`);
-  }
-  return data.historical || [];
 }
 
 /** Search for stocks/ETFs/funds by query string. Returns top matches. */

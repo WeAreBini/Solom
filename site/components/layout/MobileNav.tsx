@@ -20,6 +20,8 @@ import {
   MessageSquare,
   Trophy,
   User,
+  Compass,
+  Bitcoin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -48,6 +50,8 @@ const primaryTabs: NavItem[] = [
 
 /* ── Overflow items shown in the "More" sheet ────────────── */
 const moreItems: NavItem[] = [
+  { name: "Discover", href: "/discover", icon: Compass },
+  { name: "Crypto", href: "/crypto", icon: Bitcoin },
   { name: "13F Holdings", href: "/13f", icon: Briefcase },
   { name: "Insider/Congress", href: "/insider-senate", icon: Building2 },
   { name: "Economic", href: "/economic", icon: Globe },

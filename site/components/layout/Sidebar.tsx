@@ -22,6 +22,8 @@ import {
   User,
   PanelLeftClose,
   PanelLeftOpen,
+  Compass,
+  Bitcoin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
@@ -48,7 +50,9 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "Overview",
     items: [
       { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Discover", href: "/discover", icon: Compass },
       { name: "Market", href: "/market", icon: LineChart },
+      { name: "Crypto", href: "/crypto", icon: Bitcoin },
     ],
   },
   {
