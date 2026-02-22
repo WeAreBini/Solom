@@ -3,7 +3,10 @@
  */
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { AppShell } from "@/components/layout/AppShell";
+import { TopBar } from "@/components/layout/TopBar";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { RightPanel } from "@/components/layout/RightPanel";
+import { MobileNav } from "@/components/layout/MobileNav";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -87,7 +90,17 @@ export default function RootLayout({
           Skip to content
         </a>
         <Providers>
-          <AppShell>{children}</AppShell>
+          <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
+            <TopBar />
+            <div className="flex flex-1 overflow-hidden">
+              <Sidebar />
+              <main id="main-content" className="flex-1 overflow-y-auto bg-background">
+                {children}
+              </main>
+              <RightPanel />
+            </div>
+            <MobileNav />
+          </div>
         </Providers>
       </body>
     </html>

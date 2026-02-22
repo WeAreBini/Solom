@@ -1,272 +1,135 @@
 "use client";
 
 /**
- * @ai-context Collapsible desktop sidebar with grouped navigation sections.
- * Uses Zustand for collapse state persisted to localStorage.
- * Hidden on mobile — MobileNav handles that via Sheet.
- * @ai-related lib/stores/sidebar-store.ts, components/layout/AppShell.tsx
- * @ai-mutates useSidebarStore (collapsed toggle)
+ * @ai-context Thin, collapsible left rail for global navigation.
+ * Expands on hover or click. Hidden on mobile.
+ * @ai-related components/layout/AppShell.tsx, lib/stores/sidebar-store.ts
  */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   LayoutDashboard,
   LineChart,
-  Star,
-  CalendarDays,
-  Briefcase,
-  Building2,
-  Globe,
-  MessageSquare,
-  Trophy,
-  User,
+  Users,
+  GraduationCap,
   PanelLeftClose,
   PanelLeftOpen,
-  Compass,
-  Bitcoin,
-  Coins,
-  GraduationCap,
-  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { LucideIcon } from "lucide-react";
 
-/* ── Nav item type ───────────────────────────────────────── */
-interface NavItem {
-  name: string;
-  href: string;
-  icon: LucideIcon;
-}
-
-/* ── Grouped navigation sections ─────────────────────────── */
-const navGroups: { label: string; items: NavItem[] }[] = [
-  {
-    label: "Overview",
-    items: [
-      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { name: "Simulator", href: "/trade", icon: LineChart },
-      { name: "Discover", href: "/discover", icon: Compass },
-      { name: "Market", href: "/market", icon: LineChart },
-      { name: "Crypto", href: "/crypto", icon: Bitcoin },
-    ],
-  },
-  {
-    label: "Tracking",
-    items: [
-      { name: "Watchlist", href: "/watchlist", icon: Star },
-      { name: "Earnings", href: "/earnings", icon: CalendarDays },
-    ],
-  },
-  {
-    label: "Research",
-    items: [
-      { name: "13F Holdings", href: "/13f", icon: Briefcase },
-      { name: "Insider/Congress", href: "/insider-senate", icon: Building2 },
-      { name: "Economic", href: "/economic", icon: Globe },
-    ],
-  },
-  {
-    label: "Tools",
-    items: [
-      { name: "AI Chat", href: "/chat", icon: MessageSquare },
-      { name: "Rankings", href: "/ranks", icon: Trophy },
-    ],
-  },
-  {
-    label: "Community & Learn",
-    items: [
-      { name: "Learn", href: "/learn", icon: GraduationCap },
-      { name: "Community", href: "/community", icon: Users },
-    ],
-  },
+const navItems = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Trade", href: "/trade", icon: LineChart },
+  { name: "Community", href: "/community", icon: Users },
+  { name: "Learn", href: "/learn", icon: GraduationCap },
 ];
 
-/** Flat profile link rendered at the bottom of the sidebar */
-const profileItem: NavItem = {
-  name: "Profile",
-  href: "/profile",
-  icon: User,
-};
-
-/* ── Helper: check active state ──────────────────────────── */
-function isActive(pathname: string, href: string): boolean {
-  // Dashboard matches both "/" and "/dashboard"
-  if (href === "/dashboard") {
-    return pathname === "/" || pathname === "/dashboard" || pathname.startsWith("/dashboard/");
-  }
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-/* ── Sidebar component ───────────────────────────────────── */
 export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebarStore();
+  const [isHovered, setIsHovered] = useState(false);
+
+  // The sidebar is expanded if it's not collapsed OR if it's hovered while collapsed
+  const isExpanded = !collapsed || isHovered;
 
   return (
     <TooltipProvider delayDuration={0}>
       <aside
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         className={cn(
-          "hidden md:flex flex-col h-screen sticky top-0 border-r bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out z-30",
-          collapsed ? "w-14" : "w-60"
+          "hidden md:flex flex-col h-screen sticky top-0 border-r border-border bg-card text-card-foreground transition-all duration-300 ease-in-out z-30",
+          isExpanded ? "w-60" : "w-16"
         )}
       >
-        {/* ── Logo ──────────────────────────────────────── */}
-        <div className="flex items-center h-14 px-3 shrink-0">
+        {/* Logo Area */}
+        <div className="flex items-center h-14 px-4 shrink-0 border-b border-border/50">
           <Link
             href="/dashboard"
             className={cn(
-              "flex items-center gap-2 font-bold text-xl transition-all",
-              collapsed ? "justify-center w-full" : "px-1"
+              "flex items-center gap-3 font-bold text-xl transition-all",
+              !isExpanded && "justify-center w-full px-0"
             )}
           >
-            <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center text-primary-foreground shrink-0 shadow-sm">
+            <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center text-primary-foreground shrink-0 shadow-sm">
               S
             </div>
-            {!collapsed && (
-              <span className="whitespace-nowrap overflow-hidden animate-fade-in tracking-tight">
+            {isExpanded && (
+              <span className="whitespace-nowrap overflow-hidden animate-in fade-in tracking-tight">
                 Solom
               </span>
             )}
           </Link>
         </div>
 
-        <Separator className="bg-sidebar-border/50" />
-
-        {/* ── Nav groups ─────────────────────────────────── */}
-        <ScrollArea className="flex-1 py-3">
-          <nav aria-label="Main navigation" className="flex flex-col gap-1.5 px-2">
-            {navGroups.map((group, gi) => (
-              <div key={group.label} className="flex flex-col gap-0.5">
-                {gi > 0 && (
-                  <Separator className="my-2 bg-sidebar-border/50" />
+        {/* Navigation Links */}
+        <nav className="flex-1 py-4 flex flex-col gap-2 px-3">
+          {navItems.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            
+            const linkContent = (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "relative flex items-center gap-3 rounded-md text-sm font-medium transition-all duration-200 group",
+                  isExpanded ? "px-3 py-2.5" : "justify-center h-10 w-10 mx-auto",
+                  active
+                    ? "bg-accent text-accent-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                 )}
-
-                {/* Section header (hidden when collapsed) */}
-                {!collapsed && (
-                  <span className="px-3 pt-1 pb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 select-none">
-                    {group.label}
-                  </span>
+              >
+                {active && (
+                  <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-primary" />
                 )}
+                <item.icon className={cn(
+                  "shrink-0 transition-colors",
+                  isExpanded ? "w-5 h-5" : "w-5 h-5",
+                  active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                )} />
+                {isExpanded && <span className="whitespace-nowrap">{item.name}</span>}
+              </Link>
+            );
 
-                {group.items.map((item) => {
-                  const active = isActive(pathname, item.href);
-                  const linkContent = (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      aria-current={active ? "page" : undefined}
-                      className={cn(
-                        "relative flex items-center gap-3 rounded-md text-sm font-medium transition-all duration-200 group",
-                        collapsed
-                          ? "justify-center h-10 w-10 mx-auto"
-                          : "px-3 py-2",
-                        active
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                          : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                      )}
-                    >
-                      {/* Active left border indicator */}
-                      {active && (
-                        <span className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-primary" />
-                      )}
-                      <item.icon className={cn(
-                        "shrink-0 transition-colors",
-                        collapsed ? "w-5 h-5" : "w-4 h-4",
-                        active ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"
-                      )} />
-                      {!collapsed && <span>{item.name}</span>}
-                    </Link>
-                  );
-
-                  /* Wrap in tooltip when collapsed */
-                  if (collapsed) {
-                    return (
-                      <Tooltip key={item.name}>
-                        <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-                        <TooltipContent side="right" className="font-medium">
-                          {item.name}
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  }
-                  return <div key={item.name}>{linkContent}</div>;
-                })}
-              </div>
-            ))}
-
-            {/* ── Profile link ─────────────────────────────── */}
-            <Separator className="my-3 bg-sidebar-border/50" />
-            {(() => {
-              const active = isActive(pathname, profileItem.href);
-              const profileLink = (
-                <Link
-                  href={profileItem.href}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "relative flex items-center gap-3 rounded-md text-sm font-medium transition-all duration-200 group",
-                    collapsed
-                      ? "justify-center h-10 w-10 mx-auto"
-                      : "px-3 py-2",
-                    active
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                  )}
-                >
-                  {active && (
-                    <span className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-primary" />
-                  )}
-                  <profileItem.icon className={cn(
-                    "shrink-0 transition-colors",
-                    collapsed ? "w-5 h-5" : "w-4 h-4",
-                    active ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"
-                  )} />
-                  {!collapsed && <span>{profileItem.name}</span>}
-                </Link>
+            if (!isExpanded) {
+              return (
+                <Tooltip key={item.name}>
+                  <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                  <TooltipContent side="right" className="font-medium">
+                    {item.name}
+                  </TooltipContent>
+                </Tooltip>
               );
+            }
 
-              if (collapsed) {
-                return (
-                  <Tooltip>
-                    <TooltipTrigger asChild>{profileLink}</TooltipTrigger>
-                    <TooltipContent side="right" className="font-medium">
-                      {profileItem.name}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              }
-              return profileLink;
-            })()}
-          </nav>
-        </ScrollArea>
+            return linkContent;
+          })}
+        </nav>
 
-        {/* ── Collapse toggle ───────────────────────────── */}
-        <Separator className="bg-sidebar-border/50" />
-        <div className="flex items-center justify-center h-14 shrink-0">
+        {/* Bottom Toggle */}
+        <div className="p-3 border-t border-border/50">
           <button
             onClick={toggle}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             className={cn(
-              "flex items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all duration-200",
-              collapsed ? "w-10 h-10" : "w-full mx-3 h-10 gap-2 bg-sidebar-accent/30"
+              "flex items-center gap-3 w-full rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-200",
+              isExpanded ? "px-3 py-2.5" : "justify-center h-10 w-10 mx-auto"
             )}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
-              <PanelLeftOpen className="w-4 h-4" />
+              <PanelLeftOpen className="w-5 h-5 shrink-0" />
             ) : (
-              <>
-                <PanelLeftClose className="w-4 h-4" />
-                <span className="text-xs font-medium">Collapse</span>
-              </>
+              <PanelLeftClose className="w-5 h-5 shrink-0" />
             )}
+            {isExpanded && <span className="whitespace-nowrap">Collapse</span>}
           </button>
         </div>
       </aside>
