@@ -1,4 +1,7 @@
 import React from "react";
+
+export const dynamic = 'force-dynamic';
+
 import { OrderTicket } from "@/components/trade/OrderTicket";
 import { AdvancedChart } from "@/components/trade/AdvancedChart";
 import { NewsFeed } from "@/components/news/NewsFeed";

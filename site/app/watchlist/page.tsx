@@ -4,6 +4,9 @@
  */
 import React, { Suspense } from 'react';
 import Link from 'next/link';
+
+export const dynamic = 'force-dynamic';
+
 import { createClient } from '@/lib/supabase/server';
 import { getQuotes, getHistoricalPrices } from '@/app/actions/fmp';
 import { Skeleton } from '@/components/ui/skeleton';

@@ -1,5 +1,8 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
+
+export const dynamic = 'force-dynamic';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';

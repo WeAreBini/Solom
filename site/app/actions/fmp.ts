@@ -7,14 +7,14 @@
 
 const BASE_URL = "https://financialmodelingprep.com/api/v3";
 
-const API_KEY = process.env.FMP_API_KEY || "iNhYyvTDfaVYPdYJizU9KVEnBBUE3Ygm";
+const API_KEY = process.env.FMP_API_KEY;
 
 
 /**
  * Fetches real-time quote data for a given symbol.
  */
 export async function getQuote(symbol: string) {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return null;
   
   try {
     const res = await fetch(`${BASE_URL}/quote/${symbol}?apikey=${API_KEY}`, {
@@ -38,7 +38,7 @@ export async function getQuote(symbol: string) {
  * Fetches real-time quote data for multiple symbols.
  */
 export async function getQuotes(symbols: string[]) {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
   if (!symbols.length) return [];
   
   const symbolString = symbols.join(',');
@@ -64,7 +64,7 @@ export async function getQuotes(symbols: string[]) {
  * Fetches the most active stocks in the market.
  */
 export async function getMarketActives() {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
   
   try {
     const res = await fetch(`${BASE_URL}/stock_market/actives?apikey=${API_KEY}`, {
@@ -91,7 +91,7 @@ export async function getMarketActives() {
  * Fetches the top market gainers.
  */
 export async function getMarketGainers() {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
   
   try {
     const res = await fetch(`${BASE_URL}/stock_market/gainers?apikey=${API_KEY}`, {
@@ -118,7 +118,7 @@ export async function getMarketGainers() {
  * Fetches the top market losers.
  */
 export async function getMarketLosers() {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
   
   try {
     const res = await fetch(`${BASE_URL}/stock_market/losers?apikey=${API_KEY}`, {
@@ -145,7 +145,7 @@ export async function getMarketLosers() {
  * Fetches top cryptocurrencies.
  */
 export async function getCryptoQuotes() {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
   
   try {
     const res = await fetch(`https://financialmodelingprep.com/api/v3/quotes/crypto?apikey=${API_KEY}`, {
@@ -172,7 +172,7 @@ export async function getCryptoQuotes() {
  * @param name The name of the economic indicator (e.g., GDP, CPI, unemploymentRate)
  */
 export async function getEconomicIndicator(name: string) {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
   
   try {
     const res = await fetch(`https://financialmodelingprep.com/stable/economic-indicators?name=${name}&apikey=${API_KEY}`, {
@@ -199,7 +199,7 @@ export async function getEconomicIndicator(name: string) {
  * @returns Array of insider trade objects
  */
 export async function getInsiderTrades() {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
 
   try {
     const res = await fetch(
@@ -238,7 +238,7 @@ export async function getInsiderTrades() {
  * @returns Array of senate trade objects
  */
 export async function getSenateTrades() {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
 
   try {
     const res = await fetch(
@@ -276,7 +276,7 @@ export async function getSenateTrades() {
  * @param symbol Stock ticker (e.g. "AAPL")
  */
 export async function getInstitutionalHoldings(symbol: string) {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
 
   try {
     const res = await fetch(
@@ -308,7 +308,7 @@ export async function getInstitutionalHoldings(symbol: string) {
  * @param cik SEC CIK number (default: "0001067983" = Berkshire Hathaway)
  */
 export async function getForm13F(cik: string = "0001067983") {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
 
   try {
     const res = await fetch(
@@ -347,7 +347,7 @@ export async function getForm13F(cik: string = "0001067983") {
  * Fetches the list of top institutional holders tracked by FMP.
  */
 export async function getTopInstitutions() {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
 
   try {
     const res = await fetch(
@@ -373,7 +373,7 @@ export async function getTopInstitutions() {
  * @returns Array of house trade disclosure objects
  */
 export async function getHouseTrades() {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
 
   try {
     const res = await fetch(
@@ -412,7 +412,7 @@ export async function getHouseTrades() {
  * @returns Array of upcoming earnings events
  */
 export async function getEarningsCalendar() {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
 
   try {
     const from = new Date();
@@ -456,7 +456,7 @@ export async function getEarningsCalendar() {
  * @returns Array of news articles
  */
 export async function getMarketNews(limit: number = 10, symbol?: string) {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
 
   try {
     const url = symbol 
@@ -507,7 +507,7 @@ export async function getCompanyProfile(symbol: string): Promise<{
   state: string;
   marketCap?: number;
 } | null> {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return null;
 
   try {
     const res = await fetch(`${BASE_URL}/profile/${symbol}?apikey=${API_KEY}`, {
@@ -559,7 +559,7 @@ export async function getTickerNews(
     text: string;
   }[]
 > {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
 
   try {
     const res = await fetch(
@@ -600,7 +600,7 @@ export async function getAnalystRatings(symbol: string): Promise<{
   strongSell: number;
   date: string;
 } | null> {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return null;
 
   try {
     const res = await fetch(
@@ -641,7 +641,7 @@ export async function getPriceTarget(symbol: string): Promise<{
   targetMedian: number;
   lastDate: string;
 } | null> {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return null;
 
   try {
     const res = await fetch(
@@ -674,7 +674,7 @@ export async function getPriceTarget(symbol: string): Promise<{
  * Fetches historical daily prices for a given symbol.
  */
 export async function getHistoricalPrices(symbol: string) {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
   
   try {
     const res = await fetch(`${BASE_URL}/historical-price-full/${symbol}?apikey=${API_KEY}`, {
@@ -698,7 +698,7 @@ export async function getHistoricalPrices(symbol: string) {
 
 /** Search for stocks/ETFs/funds by query string. Returns top matches. */
 export async function searchSymbols(query: string) {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
   if (!query.trim()) return [];
   
   try {
@@ -719,7 +719,7 @@ export async function searchSymbols(query: string) {
  * Fetches sector performance.
  */
 export async function getSectorPerformance() {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
   
   try {
     const res = await fetch(`${BASE_URL}/sector-performance?apikey=${API_KEY}`, {
@@ -742,7 +742,7 @@ export async function getSectorPerformance() {
  * Fetches the last 4 annual income statements for a given symbol.
  */
 export async function getIncomeStatement(symbol: string) {
-  if (!API_KEY) throw new Error("FMP_API_KEY is not set");
+  if (!API_KEY) return [];
   
   try {
     const res = await fetch(`${BASE_URL}/income-statement/${symbol}?limit=4&apikey=${API_KEY}`, {
