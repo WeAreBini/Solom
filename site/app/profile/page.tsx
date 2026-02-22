@@ -2,13 +2,12 @@
  * @ai-context Profile page — fetches real user data from Supabase, server-rendered.
  * Theme toggle is handled by an embedded client component.
  */
-import { User, Settings, CreditCard, LogOut } from 'lucide-react';
+import { Settings, CreditCard, LogOut } from 'lucide-react';
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { createClient } from '@/lib/supabase/server';
 import { logout } from '@/app/login/actions';
 import { redirect } from 'next/navigation';

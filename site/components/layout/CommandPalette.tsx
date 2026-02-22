@@ -25,7 +25,6 @@ import {
   Search,
   TrendingUp,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useCommandStore } from "@/lib/stores/command-store";
 import { searchSymbols } from "@/app/actions/fmp";
 

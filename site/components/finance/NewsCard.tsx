@@ -4,6 +4,7 @@
  * @ai-related app/actions/fmp.ts
  */
 import { ExternalLink } from 'lucide-react';
+import Image from 'next/image';
 
 interface NewsCardProps {
   title: string;
@@ -33,11 +34,12 @@ export function NewsCard({
     >
       {image && (
         <div className="h-16 w-24 shrink-0 overflow-hidden rounded-md bg-muted">
-          <img
+          <Image
             src={image}
-            alt=""
+            alt={title}
+            width={96}
+            height={64}
             className="h-full w-full object-cover transition-transform group-hover:scale-105"
-            loading="lazy"
           />
         </div>
       )}

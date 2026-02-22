@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GainLossBadge } from '@/components/finance/GainLossBadge';
@@ -8,14 +8,13 @@ import { StockTickerCard } from '@/components/finance/StockTickerCard';
 import { NewsCard } from '@/components/finance/NewsCard';
 import { MarketIndicesStrip } from '@/components/finance/MarketIndicesStrip';
 import { Sparkline } from '@/components/finance/Sparkline';
-import { StockChart } from '@/components/finance/StockChart';
 import { AssetAllocationChart } from '@/components/finance/AssetAllocationChart';
 import { PortfolioSummary } from '@/components/dashboard/PortfolioSummary';
 import { WatchlistWidget } from '@/components/watchlist/WatchlistWidget';
 import { AIInsightsWidget } from '@/components/dashboard/AIInsightsWidget';
 import { getMarketActives, getQuotes, getMarketNews, getHistoricalPrices } from '@/app/actions/fmp';
 import { createClient } from '@/lib/supabase/server';
-import { TrendingUp, Search, ArrowRight } from 'lucide-react';
+import { Search, ArrowRight } from 'lucide-react';
 
 /**
  * @ai-context Dashboard page — portfolio overview, market summary, and real news.
@@ -40,7 +39,7 @@ export default async function DashboardPage() {
   let quotesMap: Record<string, { price: number; name: string; changesPercentage: number }> = {};
   const sparklineDataMap: Record<string, number[]> = {};
 
-  let portfolioHistory: Array<{ date: string; value: number }> = [];
+  const portfolioHistory: Array<{ date: string; value: number }> = [];
 
   try {
     const supabase = await createClient();
