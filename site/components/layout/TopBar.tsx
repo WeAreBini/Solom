@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 import { useCommandStore } from "@/lib/stores/command-store";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import { logout } from "@/app/login/actions";
+import { useQuotes } from "@/hooks/use-fmp";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,17 +30,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-const mockTicker = [
-  { symbol: "SPY", price: "508.12", change: "+0.4%", isUp: true },
-  { symbol: "QQQ", price: "438.55", change: "+0.7%", isUp: true },
-  { symbol: "IWM", price: "201.14", change: "-0.2%", isUp: false },
-  { symbol: "BTC", price: "51,240", change: "+1.5%", isUp: true },
-];
-
 export function TopBar() {
   const { setOpen } = useCommandStore();
   const { setMobileOpen } = useSidebarStore();
   const router = useRouter();
+
+  const { data: tickerData, isLoading, isError } = useQuotes(["SPY", "QQQ", "IWM", "BTCUSD", "AAPL", "MSFT", "NVDA", "TSLA"]);
 
   return (
     <header className="sticky top-0 z-40 flex h-14 w-full items-center justify-between gap-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6">
@@ -65,25 +62,40 @@ export function TopBar() {
       {/* Desktop Left: Market Ticker */}
       <div className="hidden md:flex items-center gap-6 overflow-hidden whitespace-nowrap flex-1">
         <div className="flex items-center gap-6 animate-marquee">
-          {mockTicker.map((item) => (
-            <div key={item.symbol} className="flex items-center gap-2 text-sm">
-              <span className="font-semibold text-muted-foreground">{item.symbol}</span>
-              <span>${item.price}</span>
-              <span
-                className={cn(
-                  "flex items-center text-xs font-medium",
-                  item.isUp ? "text-success" : "text-danger"
-                )}
-              >
-                {item.isUp ? (
-                  <TrendingUp className="h-3 w-3 mr-0.5" />
-                ) : (
-                  <TrendingDown className="h-3 w-3 mr-0.5" />
-                )}
-                {item.change}
-              </span>
-            </div>
-          ))}
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Skeleton className="h-4 w-10" />
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-4 w-10" />
+              </div>
+            ))
+          ) : isError || !tickerData ? (
+            <div className="text-sm text-muted-foreground">Failed to load market data</div>
+          ) : (
+            tickerData.map((item) => {
+              const isUp = item.change >= 0;
+              return (
+                <div key={item.symbol} className="flex items-center gap-2 text-sm">
+                  <span className="font-semibold text-muted-foreground">{item.symbol}</span>
+                  <span>${item.price?.toFixed(2)}</span>
+                  <span
+                    className={cn(
+                      "flex items-center text-xs font-medium",
+                      isUp ? "text-success" : "text-danger"
+                    )}
+                  >
+                    {isUp ? (
+                      <TrendingUp className="h-3 w-3 mr-0.5" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3 mr-0.5" />
+                    )}
+                    {isUp ? "+" : ""}{item.changesPercentage?.toFixed(2)}%
+                  </span>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 

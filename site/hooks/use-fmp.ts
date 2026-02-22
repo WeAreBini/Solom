@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getQuote, getMarketActives, getMarketGainers, getMarketLosers, getHistoricalPrices } from "@/app/actions/fmp";
+import { getQuote, getQuotes, getMarketActives, getMarketGainers, getMarketLosers, getHistoricalPrices } from "@/app/actions/fmp";
 
 /**
  * @ai-context Custom hooks for fetching FMP data using TanStack Query.
@@ -11,6 +11,15 @@ export function useQuote(symbol: string) {
     queryKey: ["quote", symbol],
     queryFn: () => getQuote(symbol),
     enabled: !!symbol,
+    staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+export function useQuotes(symbols: string[]) {
+  return useQuery({
+    queryKey: ["quotes", symbols.join(",")],
+    queryFn: () => getQuotes(symbols),
+    enabled: symbols.length > 0,
     staleTime: 60 * 1000, // 1 minute
   });
 }

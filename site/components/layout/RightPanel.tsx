@@ -17,14 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-
-const mockWatchlist = [
-  { symbol: "AAPL", price: "189.30", change: "+1.2%", isUp: true },
-  { symbol: "TSLA", price: "202.64", change: "-2.4%", isUp: false },
-  { symbol: "NVDA", price: "788.17", change: "+3.1%", isUp: true },
-  { symbol: "MSFT", price: "410.34", change: "+0.8%", isUp: true },
-  { symbol: "AMZN", price: "174.99", change: "-0.5%", isUp: false },
-];
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuotes } from "@/hooks/use-fmp";
 
 const mockAlerts = [
   { id: 1, message: "AAPL crossed $185", time: "10m ago" },
@@ -33,6 +27,7 @@ const mockAlerts = [
 
 export function RightPanel() {
   const [collapsed, setCollapsed] = useState(false);
+  const { data: watchlistData, isLoading, isError } = useQuotes(["AAPL", "MSFT", "NVDA", "TSLA", "SPY"]);
 
   return (
     <aside
@@ -73,30 +68,47 @@ export function RightPanel() {
                 <h2>Watchlist</h2>
               </div>
               <div className="flex flex-col gap-2">
-                {mockWatchlist.map((item) => (
-                  <div
-                    key={item.symbol}
-                    className="flex items-center justify-between p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer"
-                  >
-                    <span className="font-semibold text-sm">{item.symbol}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm">${item.price}</span>
-                      <span
-                        className={cn(
-                          "flex items-center text-xs font-medium w-14 justify-end",
-                          item.isUp ? "text-success" : "text-danger"
-                        )}
-                      >
-                        {item.isUp ? (
-                          <TrendingUp className="h-3 w-3 mr-1" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3 mr-1" />
-                        )}
-                        {item.change}
-                      </span>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center justify-between p-2">
+                      <Skeleton className="h-4 w-12" />
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-4 w-16" />
+                        <Skeleton className="h-4 w-12" />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : isError || !watchlistData ? (
+                  <div className="text-sm text-muted-foreground p-2">Failed to load watchlist</div>
+                ) : (
+                  watchlistData.map((item) => {
+                    const isUp = item.change >= 0;
+                    return (
+                      <div
+                        key={item.symbol}
+                        className="flex items-center justify-between p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer"
+                      >
+                        <span className="font-semibold text-sm">{item.symbol}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm">${item.price?.toFixed(2)}</span>
+                          <span
+                            className={cn(
+                              "flex items-center text-xs font-medium w-14 justify-end",
+                              isUp ? "text-success" : "text-danger"
+                            )}
+                          >
+                            {isUp ? (
+                              <TrendingUp className="h-3 w-3 mr-1" />
+                            ) : (
+                              <TrendingDown className="h-3 w-3 mr-1" />
+                            )}
+                            {isUp ? "+" : ""}{item.changesPercentage?.toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </section>
 
