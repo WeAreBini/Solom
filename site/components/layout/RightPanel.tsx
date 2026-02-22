@@ -18,16 +18,12 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useQuotes } from "@/hooks/use-fmp";
-
-const mockAlerts = [
-  { id: 1, message: "AAPL crossed $185", time: "10m ago" },
-  { id: 2, message: "TSLA volume spike", time: "1h ago" },
-];
+import { useQuotes, useMarketNews } from "@/hooks/use-fmp";
 
 export function RightPanel() {
   const [collapsed, setCollapsed] = useState(false);
   const { data: watchlistData, isLoading, isError } = useQuotes(["AAPL", "MSFT", "NVDA", "TSLA", "SPY"]);
+  const { data: newsData, isLoading: isNewsLoading, isError: isNewsError } = useMarketNews();
 
   return (
     <aside
@@ -118,20 +114,34 @@ export function RightPanel() {
             <section>
               <div className="flex items-center gap-2 mb-3 text-sm font-medium text-muted-foreground">
                 <Bell className="h-4 w-4" />
-                <h2>Recent Alerts</h2>
+                <h2>Market News</h2>
               </div>
               <div className="flex flex-col gap-2">
-                {mockAlerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className="flex flex-col gap-1 p-3 rounded-md bg-accent/30 border border-border/50 text-sm"
-                  >
-                    <span className="font-medium">{alert.message}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {alert.time}
-                    </span>
-                  </div>
-                ))}
+                {isNewsLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex flex-col gap-1 p-3 rounded-md bg-accent/30 border border-border/50">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-3 w-1/2 mt-1" />
+                    </div>
+                  ))
+                ) : isNewsError || !newsData ? (
+                  <div className="text-sm text-muted-foreground p-2">Failed to load news</div>
+                ) : (
+                  newsData.slice(0, 5).map((article) => (
+                    <a
+                      key={article.url || article.title}
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col gap-1 p-3 rounded-md bg-accent/30 border border-border/50 text-sm hover:bg-accent/50 transition-colors"
+                    >
+                      <span className="font-medium line-clamp-2">{article.title}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {article.site} • {new Date(article.publishedDate).toLocaleDateString()}
+                      </span>
+                    </a>
+                  ))
+                )}
               </div>
             </section>
           </div>

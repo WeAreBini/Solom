@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ExternalLink, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useMarketNews } from "@/hooks/use-fmp";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface NewsArticle {
   id: string;
@@ -19,50 +21,9 @@ interface NewsArticle {
   url: string;
 }
 
-const mockNews: NewsArticle[] = [
-  {
-    id: "1",
-    title: "Tech Stocks Rally as Inflation Data Cools",
-    source: "MarketWatch",
-    time: "10m ago",
-    sentiment: "bullish",
-    url: "#",
-  },
-  {
-    id: "2",
-    title: "Federal Reserve Signals Potential Rate Cuts Later This Year",
-    source: "Bloomberg",
-    time: "45m ago",
-    sentiment: "bullish",
-    url: "#",
-  },
-  {
-    id: "3",
-    title: "Oil Prices Slip Amid Global Demand Concerns",
-    source: "Reuters",
-    time: "2h ago",
-    sentiment: "bearish",
-    url: "#",
-  },
-  {
-    id: "4",
-    title: "Major Retailer Misses Earnings Estimates, Shares Tumble",
-    source: "CNBC",
-    time: "3h ago",
-    sentiment: "bearish",
-    url: "#",
-  },
-  {
-    id: "5",
-    title: "European Markets Close Flat Ahead of ECB Meeting",
-    source: "Financial Times",
-    time: "4h ago",
-    sentiment: "neutral",
-    url: "#",
-  },
-];
-
 export function NewsFeed({ symbol }: { symbol?: string }) {
+  const { data: newsData, isLoading, isError } = useMarketNews(symbol);
+
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader className="pb-3">
@@ -73,30 +34,51 @@ export function NewsFeed({ symbol }: { symbol?: string }) {
       <CardContent className="flex-1 p-0">
         <ScrollArea className="h-[400px] w-full">
           <div className="flex flex-col divide-y">
-            {mockNews.map((article) => (
-              <a
-                key={article.id}
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex flex-col gap-2 p-4 hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <h4 className="text-sm font-medium leading-snug line-clamp-2">
-                    {article.title}
-                  </h4>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{article.source}</span>
-                    <span>•</span>
-                    <span>{article.time}</span>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex flex-col gap-2 p-4">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <div className="flex justify-between mt-2">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-16" />
                   </div>
-                  <SentimentBadge sentiment={article.sentiment} />
                 </div>
-              </a>
-            ))}
+              ))
+            ) : isError || !newsData ? (
+              <div className="p-4 text-sm text-muted-foreground text-center">
+                Failed to load news.
+              </div>
+            ) : newsData.length === 0 ? (
+              <div className="p-4 text-sm text-muted-foreground text-center">
+                No news available.
+              </div>
+            ) : (
+              newsData.map((article) => (
+                <a
+                  key={article.url || article.title}
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col gap-2 p-4 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <h4 className="text-sm font-medium leading-snug line-clamp-2">
+                      {article.title}
+                    </h4>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{article.site}</span>
+                      <span>•</span>
+                      <span>{new Date(article.publishedDate).toLocaleDateString()}</span>
+                    </div>
+                    <SentimentBadge sentiment="neutral" />
+                  </div>
+                </a>
+              ))
+            )}
           </div>
         </ScrollArea>
       </CardContent>

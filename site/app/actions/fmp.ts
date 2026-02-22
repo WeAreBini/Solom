@@ -570,18 +570,23 @@ export async function getEarningsCalendar() {
 /**
  * Fetches the latest financial market news.
  * @param limit Number of articles to return (default 10)
+ * @param symbol Optional stock ticker to filter news by
  * @returns Array of news articles
  */
-export async function getMarketNews(limit: number = 10) {
+export async function getMarketNews(limit: number = 10, symbol?: string) {
   const mockData = [
-    { symbol: "AAPL", publishedDate: "2024-02-20 10:00:00", title: "Apple announces new product", image: "", site: "Bloomberg", text: "Apple has announced a new product today...", url: "#" },
-    { symbol: "TSLA", publishedDate: "2024-02-20 09:30:00", title: "Tesla sales surge", image: "", site: "CNBC", text: "Tesla sales have surged in the last quarter...", url: "#" }
+    { symbol: symbol || "AAPL", publishedDate: "2024-02-20 10:00:00", title: "Apple announces new product", image: "", site: "Bloomberg", text: "Apple has announced a new product today...", url: "#" },
+    { symbol: symbol || "TSLA", publishedDate: "2024-02-20 09:30:00", title: "Tesla sales surge", image: "", site: "CNBC", text: "Tesla sales have surged in the last quarter...", url: "#" }
   ];
   if (!API_KEY) return mockData.slice(0, limit);
 
   try {
+    const url = symbol 
+      ? `${BASE_URL}/stock_news?tickers=${symbol}&limit=${limit}&apikey=${API_KEY}`
+      : `${BASE_URL}/stock_news?limit=${limit}&apikey=${API_KEY}`;
+      
     const res = await fetch(
-      `${BASE_URL}/stock_news?limit=${limit}&apikey=${API_KEY}`,
+      url,
       { next: { revalidate: 900 } } // Cache 15 min
     );
 
