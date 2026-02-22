@@ -8,6 +8,7 @@ import AnalystRatings from "@/components/finance/AnalystRatings";
 import { KeyStatistics } from "@/components/finance/KeyStatistics";
 import { Card, CardContent } from "@/components/ui/card";
 import { getQuote } from "@/app/actions/fmp";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * @ai-context Trade page — hosts the OrderTicket, advanced charting, news feed, and recurring buys.
@@ -16,12 +17,35 @@ import { getQuote } from "@/app/actions/fmp";
 
 export const metadata = { title: "Simulator" };
 
-export default async function TradePage() {
-  // Mock data for the trade page
-  const symbol = "AAPL";
+export default async function TradePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ symbol?: string }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const symbol = (resolvedSearchParams.symbol || "SPY").toUpperCase();
+  
   const quote = await getQuote(symbol);
   const currentPrice = quote?.price || 150.25;
-  const buyingPower = 10000.0;
+  
+  let buyingPower = 0;
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('paper_balance')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile && profile.paper_balance !== undefined) {
+        buyingPower = profile.paper_balance;
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch buying power:", error);
+  }
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-8">

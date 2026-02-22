@@ -40,6 +40,8 @@ export default async function DashboardPage() {
   let quotesMap: Record<string, { price: number; name: string; changesPercentage: number }> = {};
   const sparklineDataMap: Record<string, number[]> = {};
 
+  let portfolioHistory: Array<{ date: string; value: number }> = [];
+
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -75,6 +77,29 @@ export default async function DashboardPage() {
         // Get last 30 days of close prices, reversed so oldest is first
         sparklineDataMap[symbol] = data.slice(0, 30).map((d: { close: number }) => d.close).reverse();
       });
+
+      // Build portfolio history
+      const maxDays = Math.min(30, Math.max(...historicalDataResults.map(d => d.length)));
+      for (let i = 0; i < maxDays; i++) {
+        let dailyValue = 0;
+        let date = '';
+        
+        portfolioItems.forEach(item => {
+          const symbolIndex = symbols.indexOf(item.symbol);
+          const data = historicalDataResults[symbolIndex];
+          if (data && data[i]) {
+            dailyValue += data[i].close * item.amount_of_shares;
+            if (!date) date = data[i].date;
+          } else {
+            dailyValue += item.price_purchased * item.amount_of_shares;
+          }
+        });
+        
+        if (date) {
+          portfolioHistory.push({ date, value: dailyValue });
+        }
+      }
+      portfolioHistory.reverse(); // Oldest first
 
       currentValue = portfolioItems.reduce((sum, p) => {
         const q = quotesMap[p.symbol];
@@ -115,19 +140,6 @@ export default async function DashboardPage() {
     n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const isEmpty = portfolioItems.length === 0;
-
-  // ─── Mock Data for Charts ─────────────────────────────────────────
-  const mockPortfolioHistory = Array.from({ length: 30 }).map((_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (29 - i));
-    // Generate a somewhat realistic looking curve starting from totalInvested
-    const baseValue = totalInvested > 0 ? totalInvested : 10000;
-    const randomWalk = Math.sin(i / 5) * 500 + (i * 100) + (Math.random() * 200 - 100);
-    return {
-      date: date.toISOString().split('T')[0],
-      value: baseValue + randomWalk,
-    };
-  });
 
   // If we have portfolio items, group by symbol for a simple allocation.
   // In a real app, you'd group by sector or asset class.
@@ -176,6 +188,7 @@ export default async function DashboardPage() {
                   totalBalance={currentValue}
                   dailyPnL={totalReturn}
                   dailyPnLPct={returnPct}
+                  chartData={portfolioHistory}
                 />
               </div>
             </div>

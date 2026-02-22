@@ -2,6 +2,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StockChart } from "@/components/finance/StockChart";
 
 /**
  * @ai-context PortfolioSummary component for the dashboard.
@@ -13,12 +14,14 @@ interface PortfolioSummaryProps {
   totalBalance: number;
   dailyPnL: number;
   dailyPnLPct: number;
+  chartData?: Array<{ date: string; value: number }>;
 }
 
 export function PortfolioSummary({
   totalBalance,
   dailyPnL,
   dailyPnLPct,
+  chartData,
 }: PortfolioSummaryProps) {
   const isPositive = dailyPnL >= 0;
 
@@ -53,11 +56,15 @@ export function PortfolioSummary({
             </div>
           </div>
 
-          {/* Chart Placeholder */}
-          <div className="h-[250px] w-full rounded-md border border-dashed border-border bg-muted/20 flex items-center justify-center">
-            <span className="text-sm text-muted-foreground">
-              Interactive Chart Placeholder
-            </span>
+          {/* Chart */}
+          <div className="h-[250px] w-full rounded-md border border-dashed border-border bg-muted/20 flex items-center justify-center overflow-hidden">
+            {chartData && chartData.length > 0 ? (
+              <StockChart data={chartData} className="border-none bg-transparent dark:bg-transparent" />
+            ) : (
+              <span className="text-sm text-muted-foreground">
+                No chart data available
+              </span>
+            )}
           </div>
         </div>
       </CardContent>

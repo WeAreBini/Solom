@@ -5,7 +5,7 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { getQuotes } from '@/app/actions/fmp';
+import { getQuotes, getHistoricalPrices } from '@/app/actions/fmp';
 import { Skeleton } from '@/components/ui/skeleton';
 import { WatchlistActions } from '@/components/watchlist/watchlist-actions';
 import {
@@ -57,19 +57,7 @@ function WatchlistSkeleton() {
   );
 }
 
-// Helper to generate mock 7D trend data
-function generateMockTrend(basePrice: number, change: number) {
-  const trend = [];
-  let currentPrice = basePrice - change; // Start price 7 days ago
-  const volatility = basePrice * 0.02; // 2% volatility
-  
-  for (let i = 0; i < 6; i++) {
-    trend.push(currentPrice);
-    currentPrice += (Math.random() - 0.5) * volatility;
-  }
-  trend.push(basePrice); // End at current price
-  return trend;
-}
+// Helper to generate mock 7D trend data removed
 
 async function WatchlistContent() {
   const supabase = await createClient();
@@ -128,8 +116,19 @@ async function WatchlistContent() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let quotes: Array<Record<string, any>> = [];
+  const sparklineDataMap: Record<string, number[]> = {};
   try {
     quotes = await getQuotes(symbols);
+    
+    // Fetch historical data for sparklines
+    const historicalDataPromises = symbols.map(symbol => getHistoricalPrices(symbol).catch(() => []));
+    const historicalDataResults = await Promise.all(historicalDataPromises);
+    
+    symbols.forEach((symbol, index) => {
+      const data = historicalDataResults[index];
+      // Get last 7 days of close prices, reversed so oldest is first
+      sparklineDataMap[symbol] = data.slice(0, 7).map((d: { close: number }) => d.close).reverse();
+    });
   } catch (err) {
     console.error('[WatchlistPage] FMP quotes error:', err);
   }
@@ -164,9 +163,8 @@ async function WatchlistContent() {
               const q = quoteMap.get(sym);
               const name = (q?.name as string) ?? sym;
               const price = (q?.price as number) ?? 0;
-              const change = (q?.change as number) ?? 0;
               const changePercent = (q?.changesPercentage as number) ?? 0;
-              const trendData = generateMockTrend(price, change);
+              const trendData = sparklineDataMap[sym] || [];
 
               return (
                 <TableRow key={sym} className="group">
