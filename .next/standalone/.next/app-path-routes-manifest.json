@@ -1,0 +1,8 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/health/route": "/api/health",
+  "/api/trpc/[trpc]/route": "/api/trpc/[trpc]",
+  "/favicon.ico/route": "/favicon.ico",
+  "/page": "/"
+}
