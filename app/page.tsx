@@ -19,6 +19,7 @@ import {
   Layers,
   Shield,
   Clock,
+  TrendingUp,
 } from "lucide-react";
 
 const features = [
@@ -84,6 +85,12 @@ export default function Home() {
             <Badge variant="secondary" className="ml-2">v2.0</Badge>
           </div>
           <nav className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" asChild>
+              <a href="/dashboard">
+                <TrendingUp className="mr-2 h-4 w-4" />
+                Markets
+              </a>
+            </Button>
             <Button variant="ghost" size="sm">
               <Github className="mr-2 h-4 w-4" />
               GitHub
