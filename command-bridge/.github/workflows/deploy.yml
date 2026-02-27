@@ -1,0 +1,15 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: railway/cli-install@v1
+      - run: railway up --service=command-bridge
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
