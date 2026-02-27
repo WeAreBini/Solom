@@ -75,10 +75,63 @@ const system2Router = router({
     }),
 });
 
+// Finance router for stock market dashboard
+import {
+  getMarketIndices,
+  getTopGainers,
+  getTopLosers,
+  searchStocks,
+  getStockQuote,
+} from '@/lib/finance';
+
+const financeRouter = router({
+  // Get market indices (S&P 500, NASDAQ, DOW)
+  getMarketIndices: publicProcedure
+    .query(async () => {
+      return getMarketIndices();
+    }),
+
+  // Get top gainers
+  getTopGainers: publicProcedure
+    .query(async () => {
+      return getTopGainers();
+    }),
+
+  // Get top losers
+  getTopLosers: publicProcedure
+    .query(async () => {
+      return getTopLosers();
+    }),
+
+  // Search for stocks
+  searchStocks: publicProcedure
+    .input(z.object({ query: z.string() }))
+    .query(async ({ input }) => {
+      return searchStocks(input.query);
+    }),
+
+  // Get a single stock quote
+  getStockQuote: publicProcedure
+    .input(z.object({ symbol: z.string() }))
+    .query(async ({ input }) => {
+      return getStockQuote(input.symbol);
+    }),
+
+  // Get market movers (both gainers and losers)
+  getMarketMovers: publicProcedure
+    .query(async () => {
+      return {
+        gainers: getTopGainers(),
+        losers: getTopLosers(),
+      };
+    }),
+});
+
 // App router
 export const appRouter = router({
   council: councilRouter,
   system2: system2Router,
+  finance: financeRouter,
 });
 
 export type AppRouter = typeof appRouter;
