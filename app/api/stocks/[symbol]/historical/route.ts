@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { 
   HistoricalDataPoint, 
   IndicatorConfig,
-  ChartData 
+  ChartData,
+  BollingerBandValue
 } from '@/lib/types/stock';
 import { 
   calculateSMA, 
   calculateEMA, 
   calculateRSI, 
   calculateMACD,
+  calculateBollingerBands,
   generateSimulatedHistoricalData,
   validateIndicatorParams 
 } from '@/lib/indicators';
@@ -31,6 +33,7 @@ const DEFAULT_INDICATORS: IndicatorConfig[] = [
   { type: 'ema', enabled: false, params: { period: 20 } },
   { type: 'rsi', enabled: false, params: { period: 14 } },
   { type: 'macd', enabled: false, params: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 } },
+  { type: 'bollingerBands', enabled: false, params: { period: 20, stdDev: 2 } },
 ];
 
 // Period to days mapping
@@ -57,6 +60,7 @@ function calculateIndicators(
     ema: [],
     rsi: [],
     macd: [],
+    bollingerBands: [],
     volume: data.map(d => ({ time: d.date, value: d.volume })),
   };
 
@@ -87,6 +91,13 @@ function calculateIndicators(
           indicator.params.signalPeriod as number
         );
         break;
+      case 'bollingerBands':
+        result.bollingerBands = calculateBollingerBands(
+          data,
+          indicator.params.period,
+          indicator.params.stdDev as number
+        ) as BollingerBandValue[];
+        break;
     }
   }
 
@@ -98,13 +109,15 @@ function calculateIndicators(
  * 
  * Query parameters:
  * - period: Time period (1D, 1W, 1M, 3M, 6M, 1Y, 2Y, 5Y)
- * - indicators: Comma-separated list of indicators (sma,ema,rsi,macd,volume)
+ * - indicators: Comma-separated list of indicators (sma,ema,rsi,macd,bollingerBands,volume)
  * - smaPeriod: SMA period (default: 20)
  * - emaPeriod: EMA period (default: 20)
  * - rsiPeriod: RSI period (default: 14)
  * - macdFast: MACD fast period (default: 12)
  * - macdSlow: MACD slow period (default: 26)
  * - macdSignal: MACD signal period (default: 9)
+ * - bbPeriod: Bollinger Bands period (default: 20)
+ * - bbStdDev: Bollinger Bands std dev multiplier (default: 2)
  */
 export async function GET(
   request: NextRequest,
@@ -132,7 +145,7 @@ export async function GET(
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '1Y';
-    const requestedIndicators = searchParams.get('indicators')?.split(',') || [];
+    const requestedIndicators = searchParams.get('indicators')?.split(',').filter(Boolean) || [];
 
     // Get period days
     const days = PERIOD_DAYS[period.toUpperCase()] || 365;
@@ -163,15 +176,15 @@ export async function GET(
         if (fast) config.params.fastPeriod = parseInt(fast, 10);
         if (slow) config.params.slowPeriod = parseInt(slow, 10);
         if (signal) config.params.signalPeriod = parseInt(signal, 10);
+      } else if (indicator.type === 'bollingerBands') {
+        const bbPeriod = searchParams.get('bbPeriod');
+        const bbStdDev = searchParams.get('bbStdDev');
+        if (bbPeriod) config.params.period = parseInt(bbPeriod, 10);
+        if (bbStdDev) config.params.stdDev = parseFloat(bbStdDev);
       }
 
       return config;
     });
-
-    // Always include volume
-    if (!requestedIndicators.includes('volume')) {
-      requestedIndicators.push('volume');
-    }
 
     // Calculate indicators
     const indicatorData = calculateIndicators(historicalData, indicators);
