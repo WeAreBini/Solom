@@ -228,7 +228,7 @@ export default function Home() {
         <div className="text-center">
           <h3 className="text-lg font-medium text-muted-foreground">Built with modern technologies</h3>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-6">
-            {["Next.js 16", "tRPC", "TypeScript", "Prisma", "PostgreSQL", "Redis", "BullMQ", "Playwright"].map((tech) => (
+            {["Next.js 16", "TypeScript", "Tailwind CSS", "React Query", "FMP API"].map((tech) => (
               <Badge key={tech} variant="outline" className="px-4 py-2 text-sm">
                 {tech}
               </Badge>

@@ -32,16 +32,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Prisma
-prisma/*.db
-prisma/*.db-journal
-
-# Vercel
-.vercel
-
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
 
-# Railway
-railway.toml
+# Vercel
+.vercel

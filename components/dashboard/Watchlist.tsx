@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { trpc } from "@/lib/trpc";
+import { useStockSearch } from "@/lib/api";
 import { TrendingUp, TrendingDown, Star, Trash2, Loader2, RefreshCw } from "lucide-react";
 
 interface WatchlistProps {
@@ -23,13 +23,8 @@ export function Watchlist({ symbols, onRemove }: WatchlistProps) {
   }>>(new Map());
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch initial quotes
-  const { data, isLoading, error, refetch } = trpc.finance.searchStocks.useQuery(
-    { query: "" },
-    {
-      enabled: symbols.length > 0,
-    }
-  );
+  // Fetch all stocks by searching with empty query (returns all)
+  const { data, isLoading, error, refetch } = useStockSearch("", symbols.length > 0);
 
   // Update stocks when data changes using derived state pattern
   const stocksData = data?.filter(s => symbols.includes(s.symbol)) ?? [];

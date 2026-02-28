@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { trpc } from "@/lib/trpc";
+import { useStockQuote } from "@/lib/api";
 import { TrendingUp, TrendingDown, X, Loader2 } from "lucide-react";
 
 interface StockQuoteDetailProps {
@@ -15,7 +15,7 @@ export function StockQuoteDetail({ symbol, onClose }: StockQuoteDetailProps) {
   const [price, setPrice] = useState<number | null>(null);
   const [previousPrice, setPreviousPrice] = useState<number | null>(null);
   
-  const { data: stock, isLoading, error } = trpc.finance.getStockQuote.useQuery({ symbol });
+  const { data: stock, isLoading, error } = useStockQuote(symbol);
 
   // Set initial price when stock data loads - use derived state
   const basePrice = stock?.price ?? null;
@@ -43,7 +43,7 @@ export function StockQuoteDetail({ symbol, onClose }: StockQuoteDetailProps) {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [stock, price ]);
+  }, [stock, price]);
 
   if (isLoading) {
     return (
