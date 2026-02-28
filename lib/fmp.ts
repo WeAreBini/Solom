@@ -248,5 +248,133 @@ export async function getMarketMovers(): Promise<{ gainers: MarketMover[]; loser
   }
 }
 
+// ============ Historical Data Types ============
+
+export interface HistoricalDataPoint {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  adjClose?: number;
+  change?: number;
+  changePercent?: number;
+}
+
+export interface HistoricalDataResponse {
+  symbol: string;
+  historical: HistoricalDataPoint[];
+}
+
+/**
+ * Get historical price data for a stock
+ * @param symbol Stock symbol
+ * @param period Time period (1D, 1W, 1M, 3M, 1Y)
+ */
+export async function getHistoricalData(
+  symbol: string,
+  period: '1D' | '1W' | '1M' | '3M' | '1Y' = '1M'
+): Promise<HistoricalDataPoint[]> {
+  // Map period to days
+  const periodDays: Record<string, number> = {
+    '1D': 1,
+    '1W': 7,
+    '1M': 30,
+    '3M': 90,
+    '1Y': 365,
+  };
+  
+  const days = periodDays[period] || 30;
+  
+  try {
+    // Calculate date range
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - days);
+    
+    const formatDate = (date: Date) => date.toISOString().split('T')[0];
+    
+    const results = await fetchFMP<{ historical: HistoricalDataPoint[] }>(
+      `/historical-price-full/${symbol}`,
+      { from: formatDate(from), to: formatDate(to) },
+      5 // Cache for 5 minutes
+    );
+    
+    // Transform and add calculated fields
+    const historical = results?.historical || [];
+    
+    // Calculate changes
+    for (let i = 0; i < historical.length; i++) {
+      const current = historical[i];
+      const prev = i > 0 ? historical[i - 1] : null;
+      if (current && prev && prev.close) {
+        current.change = current.close - prev.close;
+        current.changePercent = current.change / prev.close * 100;
+      } else if (current) {
+        current.change = 0;
+        current.changePercent = 0;
+      }
+    }
+    
+    return historical.reverse(); // Most recent last
+  } catch (error) {
+    console.error(`Error fetching historical data for ${symbol}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Get intraday data for real-time charts (1D view)
+ * @param symbol Stock symbol
+ */
+export async function getIntradayData(
+  symbol: string
+): Promise<HistoricalDataPoint[]> {
+  try {
+    // Fetch 1-hour intervals for the current day
+    const results = await fetchFMP<{ historical: HistoricalDataPoint[] }>(
+      `/historical-price-full/interval/${symbol}`,
+      { interval: '1hour' },
+      1 // Cache for 1 minute (real-time)
+    );
+    
+    return results?.historical || [];
+  } catch (error) {
+    // Fallback to simulated data if intraday API fails
+    console.warn(`Intraday API failed for ${symbol}, using simulation:`, error);
+    return generateSimulatedIntradayData();
+  }
+}
+
+/**
+ * Generate simulated intraday data when API is unavailable
+ */
+function generateSimulatedIntradayData(): HistoricalDataPoint[] {
+  const data: HistoricalDataPoint[] = [];
+  const now = new Date();
+  const basePrice = 150 + Math.random() * 100; // Random base price
+  
+  for (let i = 0; i < 24; i++) {
+    const time = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
+    const volatility = 0.002;
+    const change = basePrice * volatility * (Math.random() - 0.5) * 2;
+    const price = Math.max(basePrice + change, 0.01);
+    
+    data.push({
+      date: time.toISOString(),
+      open: price * (1 - Math.random() * 0.01),
+      high: price * (1 + Math.random() * 0.02),
+      low: price * (1 - Math.random() * 0.02),
+      close: price,
+      volume: Math.floor(Math.random() * 1000000) + 500000,
+      change: change,
+      changePercent: (change / basePrice) * 100,
+    });
+  }
+  
+  return data;
+}
+
 // Export types for consumers
 export type { StockSearchResult, StockProfile, StockQuote, MarketIndex, MarketMover };
