@@ -9,7 +9,7 @@ import { useRealTimePrice } from "@/lib/hooks";
 import { useHistoricalData, type HistoricalDataPoint } from "@/lib/api";
 import { TrendingUp, TrendingDown, X, Loader2, LineChart as LineChartIcon, BarChart3 } from "lucide-react";
 import { CandlestickChart } from "@/components/charts/CandlestickChart";
-import { LineChart } from "@/components/charts/LineChart";
+import { PriceLineChart } from "@/components/charts/line-chart";
 
 // Chart type preference key for localStorage
 const CHART_TYPE_PREF_KEY = "solom_chart_type_pref";
@@ -124,8 +124,9 @@ export function StockQuoteDetail({ symbol, onClose }: StockQuoteDetailProps) {
   })) ?? [];
 
   const lineData = historicalData?.candlestick?.map((candle: HistoricalDataPoint) => ({
-    time: candle.date,
-    value: candle.close,
+    date: candle.date,
+    price: candle.close,
+    volume: candle.volume,
   })) ?? [];
 
   return (
@@ -277,9 +278,10 @@ export function StockQuoteDetail({ symbol, onClose }: StockQuoteDetailProps) {
               className="rounded-lg border"
             />
           ) : (
-            <LineChart
+            <PriceLineChart
               data={lineData}
               height={300}
+              showVolume={false}
               className="rounded-lg border"
             />
           )}

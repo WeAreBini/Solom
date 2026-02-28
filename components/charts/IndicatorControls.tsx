@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
   Activity, 
@@ -13,19 +12,17 @@ import {
   ChevronDown,
   ChevronUp,
   Plus,
-  Minus,
-  CircleDot
+  Minus
 } from 'lucide-react';
 
 // Types
-export type IndicatorType = 'sma' | 'ema' | 'rsi' | 'macd' | 'bollingerBands';
+export type IndicatorType = 'sma' | 'ema' | 'rsi' | 'macd';
 
 export interface IndicatorSettings {
   sma: { enabled: boolean; period: number; color: string };
   ema: { enabled: boolean; period: number; color: string };
   rsi: { enabled: boolean; period: number; overbought: number; oversold: number };
   macd: { enabled: boolean; fastPeriod: number; slowPeriod: number; signalPeriod: number };
-  bollingerBands: { enabled: boolean; period: number; stdDev: number };
 }
 
 export interface IndicatorControlsProps {
@@ -39,7 +36,6 @@ const DEFAULT_COLORS = {
   ema: '#8b5cf6',
   rsi: '#f59e0b',
   macd: '#22c55e',
-  bollingerBands: '#06b6d4',
 };
 
 // Indicator info for display
@@ -67,12 +63,6 @@ const INDICATOR_INFO = {
     shortName: 'MACD',
     description: 'Momentum indicator showing relationship between two EMAs',
     icon: BarChart2,
-  },
-  bollingerBands: {
-    name: 'Bollinger Bands',
-    shortName: 'BB',
-    description: 'Volatility indicator showing upper and lower price bands',
-    icon: CircleDot,
   },
 };
 
@@ -115,9 +105,9 @@ function IndicatorControl({
                 >
                   <Minus className="h-3 w-3" />
                 </Button>
-                <Input
+                <input
                   type="number"
-                  className="h-6 w-14 text-center text-sm"
+                  className="h-6 w-14 rounded border px-2 text-center text-sm"
                   value={(settings as { period: number }).period}
                   onChange={(e) => {
                     const newPeriod = parseInt(e.target.value, 10);
@@ -161,9 +151,9 @@ function IndicatorControl({
                 >
                   <Minus className="h-3 w-3" />
                 </Button>
-                <Input
+                <input
                   type="number"
-                  className="h-6 w-14 text-center text-sm"
+                  className="h-6 w-14 rounded border px-2 text-center text-sm"
                   value={(settings as { period: number }).period}
                   onChange={(e) => {
                     const newPeriod = parseInt(e.target.value, 10);
@@ -189,9 +179,9 @@ function IndicatorControl({
             </div>
             <div className="flex items-center justify-between">
               <label className="text-sm text-muted-foreground">Overbought</label>
-              <Input
+              <input
                 type="number"
-                className="h-6 w-16 text-center text-sm"
+                className="h-6 w-16 rounded border px-2 text-center text-sm"
                 value={(settings as { overbought: number }).overbought}
                 onChange={(e) => {
                   const value = parseInt(e.target.value, 10);
@@ -205,9 +195,9 @@ function IndicatorControl({
             </div>
             <div className="flex items-center justify-between">
               <label className="text-sm text-muted-foreground">Oversold</label>
-              <Input
+              <input
                 type="number"
-                className="h-6 w-16 text-center text-sm"
+                className="h-6 w-16 rounded border px-2 text-center text-sm"
                 value={(settings as { oversold: number }).oversold}
                 onChange={(e) => {
                   const value = parseInt(e.target.value, 10);
@@ -275,104 +265,6 @@ function IndicatorControl({
             </div>
           </div>
         );
-
-      case 'bollingerBands':
-        return (
-          <div className="mt-2 space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm text-muted-foreground">Period</label>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => {
-                    const newPeriod = Math.max(2, (settings as { period: number }).period - 1);
-                    onChange(enabled, { ...settings, period: newPeriod });
-                  }}
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
-                <Input
-                  type="number"
-                  className="h-6 w-14 text-center text-sm"
-                  value={(settings as { period: number }).period}
-                  onChange={(e) => {
-                    const newPeriod = parseInt(e.target.value, 10);
-                    if (!isNaN(newPeriod) && newPeriod >= 2 && newPeriod <= 500) {
-                      onChange(enabled, { ...settings, period: newPeriod });
-                    }
-                  }}
-                  min={2}
-                  max={500}
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => {
-                    const newPeriod = Math.min(500, (settings as { period: number }).period + 1);
-                    onChange(enabled, { ...settings, period: newPeriod });
-                  }}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <label className="text-sm text-muted-foreground">Std Dev Multiplier</label>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => {
-                    const newStdDev = Math.max(0.5, (settings as { stdDev: number }).stdDev - 0.5);
-                    onChange(enabled, { ...settings, stdDev: newStdDev });
-                  }}
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
-                <Input
-                  type="number"
-                  className="h-6 w-14 text-center text-sm"
-                  value={(settings as { stdDev: number }).stdDev}
-                  onChange={(e) => {
-                    const newStdDev = parseFloat(e.target.value);
-                    if (!isNaN(newStdDev) && newStdDev >= 0.5 && newStdDev <= 5) {
-                      onChange(enabled, { ...settings, stdDev: newStdDev });
-                    }
-                  }}
-                  min={0.5}
-                  max={5}
-                  step={0.5}
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => {
-                    const newStdDev = Math.min(5, (settings as { stdDev: number }).stdDev + 0.5);
-                    onChange(enabled, { ...settings, stdDev: newStdDev });
-                  }}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        );
-    }
-  };
-
-  const getPeriodLabel = () => {
-    switch (type) {
-      case 'macd':
-        return `${(settings as { fastPeriod: number }).fastPeriod}/${(settings as { slowPeriod: number }).slowPeriod}/${(settings as { signalPeriod: number }).signalPeriod}`;
-      case 'bollingerBands':
-        return `${(settings as { period: number }).period},${(settings as { stdDev: number }).stdDev}`;
-      default:
-        return (settings as { period: number }).period;
     }
   };
 
@@ -391,7 +283,9 @@ function IndicatorControl({
               <span className="font-medium">{info.name}</span>
               {enabled && (
                 <Badge variant="secondary" className="text-xs">
-                  {getPeriodLabel()}
+                  {type === 'macd' 
+                    ? `${(settings as { fastPeriod: number }).fastPeriod}/${(settings as { slowPeriod: number }).slowPeriod}/${(settings as { signalPeriod: number }).signalPeriod}`
+                    : (settings as { period: number }).period}
                 </Badge>
               )}
             </div>
@@ -419,7 +313,6 @@ export const DEFAULT_INDICATOR_SETTINGS: IndicatorSettings = {
   ema: { enabled: false, period: 20, color: DEFAULT_COLORS.ema },
   rsi: { enabled: false, period: 14, overbought: 70, oversold: 30 },
   macd: { enabled: false, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
-  bollingerBands: { enabled: false, period: 20, stdDev: 2 },
 };
 
 export function IndicatorControls({ 
@@ -456,7 +349,7 @@ export function IndicatorControls({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {(['sma', 'ema', 'bollingerBands', 'rsi', 'macd'] as const).map((type) => (
+        {(['sma', 'ema', 'rsi', 'macd'] as const).map((type) => (
           <IndicatorControl
             key={type}
             type={type}
