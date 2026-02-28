@@ -3,9 +3,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ConnectionStatusIndicator, useConnectionStatus } from "@/components/ui/connection-status";
 import { useRealTimePrice } from "@/lib/hooks";
-import { TrendingUp, TrendingDown, X, Loader2 } from "lucide-react";
+import { useHistoricalData, type HistoricalDataPoint } from "@/lib/api";
+import { TrendingUp, TrendingDown, X, Loader2, LineChart as LineChartIcon, BarChart3 } from "lucide-react";
+import { CandlestickChart } from "@/components/charts/CandlestickChart";
+import { LineChart } from "@/components/charts/LineChart";
+
+// Chart type preference key for localStorage
+const CHART_TYPE_PREF_KEY = "solom_chart_type_pref";
+
+type ChartType = "line" | "candlestick";
 
 interface StockQuoteDetailProps {
   symbol: string;
@@ -14,6 +23,8 @@ interface StockQuoteDetailProps {
 
 export function StockQuoteDetail({ symbol, onClose }: StockQuoteDetailProps) {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [chartType, setChartType] = useState<ChartType>("candlestick");
+  const [isClient, setIsClient] = useState(false);
   
   // Get connection status for WebSocket
   const connectionStatus = useConnectionStatus();
@@ -25,8 +36,35 @@ export function StockQuoteDetail({ symbol, onClose }: StockQuoteDetailProps) {
     }, []),
   });
 
+  // Fetch historical data for the chart
+  const { data: historicalData, isLoading: isLoadingHistorical, error: historicalError } = useHistoricalData(symbol, "1M");
+
   // Track price animation
   const [showPriceAnimation, setShowPriceAnimation] = useState(false);
+
+  // Load chart type preference from localStorage
+  useEffect(() => {
+    setIsClient(true);
+    try {
+      const savedPref = localStorage.getItem(CHART_TYPE_PREF_KEY);
+      if (savedPref === "line" || savedPref === "candlestick") {
+        setChartType(savedPref);
+      }
+    } catch (e) {
+      // localStorage might not be available
+      console.warn("Could not read chart type preference:", e);
+    }
+  }, []);
+
+  // Save chart type preference to localStorage
+  const handleChartTypeChange = useCallback((type: ChartType) => {
+    setChartType(type);
+    try {
+      localStorage.setItem(CHART_TYPE_PREF_KEY, type);
+    } catch (e) {
+      console.warn("Could not save chart type preference:", e);
+    }
+  }, []);
 
   useEffect(() => {
     if (direction !== "neutral") {
@@ -74,6 +112,21 @@ export function StockQuoteDetail({ symbol, onClose }: StockQuoteDetailProps) {
       second: "2-digit",
     });
   };
+
+  // Transform historical data for the charts
+  const candlestickData = historicalData?.candlestick?.map((candle: HistoricalDataPoint) => ({
+    time: candle.date,
+    open: candle.open,
+    high: candle.high,
+    low: candle.low,
+    close: candle.close,
+    volume: candle.volume,
+  })) ?? [];
+
+  const lineData = historicalData?.candlestick?.map((candle: HistoricalDataPoint) => ({
+    time: candle.date,
+    value: candle.close,
+  })) ?? [];
 
   return (
     <Card>
@@ -175,6 +228,60 @@ export function StockQuoteDetail({ symbol, onClose }: StockQuoteDetailProps) {
           )}
           {price.ask !== undefined && (
             <StatItem label="Ask" value={`$${price.ask.toFixed(2)}`} />
+          )}
+        </div>
+
+        {/* Price Chart Section */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-muted-foreground">Price Chart (1M)</h3>
+            <div className="flex items-center gap-1 rounded-lg border p-1">
+              <Button
+                variant={chartType === "line" ? "default" : "ghost"}
+                size="sm"
+                className="h-7 px-2"
+                onClick={() => handleChartTypeChange("line")}
+              >
+                <LineChartIcon className="h-4 w-4 mr-1" />
+                Line
+              </Button>
+              <Button
+                variant={chartType === "candlestick" ? "default" : "ghost"}
+                size="sm"
+                className="h-7 px-2"
+                onClick={() => handleChartTypeChange("candlestick")}
+              >
+                <BarChart3 className="h-4 w-4 mr-1" />
+                Candlestick
+              </Button>
+            </div>
+          </div>
+          
+          {isLoadingHistorical ? (
+            <div className="flex h-[300px] items-center justify-center bg-muted/20 rounded-lg">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : historicalError ? (
+            <div className="flex h-[300px] items-center justify-center bg-muted/20 rounded-lg text-muted-foreground text-sm">
+              Failed to load chart data
+            </div>
+          ) : candlestickData.length === 0 ? (
+            <div className="flex h-[300px] items-center justify-center bg-muted/20 rounded-lg text-muted-foreground text-sm">
+              No historical data available
+            </div>
+          ) : chartType === "candlestick" ? (
+            <CandlestickChart
+              data={candlestickData}
+              height={300}
+              showVolume={true}
+              className="rounded-lg border"
+            />
+          ) : (
+            <LineChart
+              data={lineData}
+              height={300}
+              className="rounded-lg border"
+            />
           )}
         </div>
 

@@ -133,17 +133,91 @@ export function useStockProfile(symbol: string) {
 
 export interface HistoricalDataPoint {
   date: string;
-  price: number;
   open: number;
   high: number;
   low: number;
+  close: number;
   volume: number;
 }
 
-export function useHistoricalData(symbol: string, period: '1D' | '1W' | '1M' | '3M' | '1Y' = '1M') {
+export interface IndicatorValue {
+  time: string;
+  value: number;
+}
+
+export interface MACDValue {
+  time: string;
+  macd: number;
+  signal: number;
+  histogram: number;
+}
+
+export interface ChartIndicators {
+  sma: IndicatorValue[];
+  ema: IndicatorValue[];
+  rsi: IndicatorValue[];
+  macd: MACDValue[];
+  volume: IndicatorValue[];
+}
+
+export interface ChartData {
+  candlestick: HistoricalDataPoint[];
+  indicators: ChartIndicators;
+}
+
+interface HistoricalDataResponse {
+  success: boolean;
+  data?: ChartData;
+  error?: string;
+}
+
+export function useHistoricalData(
+  symbol: string, 
+  period: '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '2Y' | '5Y' = '1Y',
+  options?: {
+    indicators?: string[];
+    smaPeriod?: number;
+    emaPeriod?: number;
+    rsiPeriod?: number;
+    macdFast?: number;
+    macdSlow?: number;
+    macdSignal?: number;
+  }
+) {
+  const params = new URLSearchParams({ period });
+  
+  if (options?.indicators?.length) {
+    params.set('indicators', options.indicators.join(','));
+  }
+  if (options?.smaPeriod) {
+    params.set('smaPeriod', String(options.smaPeriod));
+  }
+  if (options?.emaPeriod) {
+    params.set('emaPeriod', String(options.emaPeriod));
+  }
+  if (options?.rsiPeriod) {
+    params.set('rsiPeriod', String(options.rsiPeriod));
+  }
+  if (options?.macdFast) {
+    params.set('macdFast', String(options.macdFast));
+  }
+  if (options?.macdSlow) {
+    params.set('macdSlow', String(options.macdSlow));
+  }
+  if (options?.macdSignal) {
+    params.set('macdSignal', String(options.macdSignal));
+  }
+
   return useQuery({
-    queryKey: ['historicalData', symbol, period],
-    queryFn: () => fetchApi<HistoricalDataPoint[]>(`/api/stocks/${symbol}/historical?period=${period}`),
+    queryKey: ['historicalData', symbol, period, options],
+    queryFn: async () => {
+      const response = await fetch(`/api/stocks/${symbol}/historical?${params.toString()}`);
+      const data: HistoricalDataResponse = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || `API error: ${response.status}`);
+      }
+      return data.data;
+    },
     enabled: !!symbol,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

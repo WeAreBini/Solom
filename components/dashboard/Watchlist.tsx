@@ -1,91 +1,100 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useStockSearch } from "@/lib/api";
+import { useRealTimePrices } from "@/lib/hooks";
+import { ConnectionStatusIndicator, useConnectionStatus } from "@/components/ui/connection-status";
 import { TrendingUp, TrendingDown, Star, Trash2, Loader2, RefreshCw } from "lucide-react";
+import type { RealTimePrice } from "@/lib/hooks";
 
 interface WatchlistProps {
   symbols: string[];
   onRemove: (symbol: string) => void;
 }
 
-export function Watchlist({ symbols, onRemove }: WatchlistProps) {
-  const [stocks, setStocks] = useState<Map<string, {
-    symbol: string;
-    name: string;
-    price: number;
-    change: number;
-    changePercent: number;
-    previousPrice: number | null;
-  }>>(new Map());
-  const [isRefreshing, setIsRefreshing] = useState(false);
+// Track previous prices for animation
+interface StockWithPrevious {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  previousPrice: number | null;
+  source: RealTimePrice["source"];
+}
 
-  // Fetch all stocks by searching with empty query (returns all)
+export function Watchlist({ symbols, onRemove }: WatchlistProps) {
+  const [stockNames, setStockNames] = useState<Map<string, string>>(new Map());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [prevPrices, setPrevPrices] = useState<Map<string, number>>(new Map());
+
+  // Get connection status for WebSocket indicator
+  const connectionStatus = useConnectionStatus();
+
+  // Fetch stock names from search API
   const { data, isLoading, error, refetch } = useStockSearch("", symbols.length > 0);
 
-  // Update stocks when data changes using derived state pattern
-  const stocksData = data?.filter(s => symbols.includes(s.symbol)) ?? [];
-  
-  // Initialize stocks from fetched data
+  // Extract stock names from search results
   useEffect(() => {
-    if (stocksData.length > 0) {
-      setStocks(prev => {
+    if (data) {
+      setStockNames(prev => {
         const newMap = new Map(prev);
-        stocksData.forEach(stock => {
-          const prevStock = newMap.get(stock.symbol);
-          if (!prevStock) {
-            newMap.set(stock.symbol, {
-              symbol: stock.symbol,
-              name: stock.name,
-              price: stock.price,
-              change: stock.change,
-              changePercent: stock.changePercent,
-              previousPrice: null,
-            });
+        data.forEach(stock => {
+          if (symbols.includes(stock.symbol)) {
+            newMap.set(stock.symbol, stock.name);
           }
         });
         return newMap;
       });
     }
-  }, [stocksData]);
+  }, [data, symbols]);
 
-  // Simulate real-time updates
-  useEffect(() => {
-    if (symbols.length === 0) return;
-
-    const interval = setInterval(() => {
-      setStocks(prev => {
-        const newMap = new Map(prev);
-        newMap.forEach((stock, symbol) => {
-          if (symbols.includes(symbol)) {
-            // Simulate price fluctuation
-            const volatility = 0.001;
-            const priceChange = stock.price * volatility * (Math.random() - 0.5) * 2;
-            const newPrice = Math.max(0.01, stock.price + priceChange);
-            const roundedPrice = Math.round(newPrice * 100) / 100;
-            
-            newMap.set(symbol, {
-              ...stock,
-              previousPrice: stock.price,
-              price: roundedPrice,
-            });
-          }
-        });
-        return newMap;
+  // Get real-time prices via WebSocket with polling fallback
+  const { prices, isLoading: pricesLoading, areFromWebSocket } = useRealTimePrices(symbols, {
+    enabled: symbols.length > 0,
+    onPriceUpdate: useCallback((symbol: string, price: RealTimePrice) => {
+      // Track previous price for animation
+      setPrevPrices(prev => {
+        const currentPrice = prev.get(symbol);
+        if (currentPrice !== undefined && currentPrice !== price.price) {
+          // Price changed - animation will show
+        }
+        return prev;
       });
-    }, 3000); // Update every 3 seconds
+    }, []),
+  });
 
-    return () => clearInterval(interval);
-  }, [symbols]);
-
+  // Handle manual refresh
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await refetch();
     setTimeout(() => setIsRefreshing(false), 500);
   };
+
+  // Merge real-time prices with stock names
+  const stocksList: StockWithPrevious[] = useMemo(() => {
+    const list: StockWithPrevious[] = [];
+    
+    for (const symbol of symbols) {
+      const rtPrice = prices.get(symbol);
+      if (rtPrice) {
+        list.push({
+          symbol: rtPrice.symbol,
+          name: stockNames.get(symbol) || symbol,
+          price: rtPrice.price,
+          change: rtPrice.change,
+          changePercent: rtPrice.changePercent,
+          previousPrice: prevPrices.get(symbol) ?? null,
+          source: rtPrice.source,
+        });
+      }
+    }
+    
+    return list;
+  }, [symbols, prices, stockNames, prevPrices]);
 
   if (symbols.length === 0) {
     return (
@@ -111,7 +120,7 @@ export function Watchlist({ symbols, onRemove }: WatchlistProps) {
     );
   }
 
-  if (isLoading) {
+  if (isLoading && prices.size === 0) {
     return (
       <Card>
         <CardHeader>
@@ -129,7 +138,7 @@ export function Watchlist({ symbols, onRemove }: WatchlistProps) {
     );
   }
 
-  if (error) {
+  if (error && prices.size === 0) {
     return (
       <Card>
         <CardHeader>
@@ -147,8 +156,6 @@ export function Watchlist({ symbols, onRemove }: WatchlistProps) {
     );
   }
 
-  const stocksList = Array.from(stocks.values()).filter(s => symbols.includes(s.symbol));
-
   return (
     <Card>
       <CardHeader>
@@ -160,17 +167,29 @@ export function Watchlist({ symbols, onRemove }: WatchlistProps) {
               {symbols.length}
             </Badge>
           </CardTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <ConnectionStatusIndicator 
+              status={connectionStatus.status} 
+              showLabel={false}
+              size="sm"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
+        {stocksList.length === 0 && symbols.length > 0 && (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
         <div className="space-y-2">
           {stocksList.map((stock) => (
             <WatchlistRow
@@ -182,8 +201,8 @@ export function Watchlist({ symbols, onRemove }: WatchlistProps) {
         </div>
         <div className="mt-4 text-center text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            Real-time updates every 3s
+            <span className={`h-2 w-2 rounded-full ${areFromWebSocket ? "bg-emerald-500 animate-pulse" : "bg-blue-500"}`} />
+            {areFromWebSocket ? "Real-time WebSocket updates" : "Polling updates (3s)"}
           </span>
         </div>
       </CardContent>
