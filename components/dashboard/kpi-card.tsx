@@ -1,213 +1,403 @@
 "use client";
 
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import React, { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-
-export type TrendDirection = "up" | "down" | "neutral";
-export type SizeVariant = "sm" | "md" | "lg" | "xl";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { MiniSparkline } from "@/components/charts/sparkline";
+import {
+  semanticColors,
+  formatPercentage,
+  TrendDirection,
+  SizeVariant,
+  determineTrend,
+} from "@/lib/design-tokens";
+import { TrendingUp, TrendingDown, Minus, LucideIcon } from "lucide-react";
 
 export interface KPICardProps {
+  /** Label describing the metric */
   label: string;
-  value: string | number;
-  subLabel?: string;
+  /** Primary value to display */
+  value: number | string;
+  /** Optional sublabel below the main label */
+  sublabel?: string;
+  /** Percentage change (e.g., 12.5 for +12.5%) */
   change?: number;
+  /** Label for the change (e.g., "vs last month") */
   changeLabel?: string;
+  /** Trend direction - auto-detected from change if not provided */
   trend?: TrendDirection;
+  /** Sparkline data for mini chart */
   sparklineData?: number[];
-  icon?: React.ReactNode;
-  variant?: "default" | "compact" | "large" | "minimal";
-  isLoading?: boolean;
+  /** Optional icon to display */
+  icon?: LucideIcon;
+  /** Size variant */
+  size?: SizeVariant;
+  /** Currency code for formatting */
+  currency?: string;
+  /** Whether to use compact number formatting */
+  compact?: boolean;
+  /** Whether the card is clickable */
   onClick?: () => void;
+  /** Badge text to show in header */
+  badge?: string;
+  /** Badge variant */
+  badgeVariant?: "default" | "success" | "destructive" | "secondary" | "outline";
+  /** Loading state */
+  isLoading?: boolean;
+  /** Error state */
+  error?: string;
+  /** Additional class name */
   className?: string;
+  /** Children for custom content */
+  children?: React.ReactNode;
 }
 
-const kpiCardVariants = {
-  default: { padding: "p-6", valueSize: "text-2xl" },
-  compact: { padding: "p-4", valueSize: "text-xl" },
-  large: { padding: "p-8", valueSize: "text-4xl" },
-  minimal: { padding: "p-3", valueSize: "text-lg" },
-} as const;
+/**
+ * Format currency value consistently
+ */
+function formatCurrency(value: number, currency: string = "USD"): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
 
+/**
+ * Format large numbers in compact form
+ */
+function formatCompact(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+/**
+ * KPI Card Component
+ * 
+ * Displays a key performance indicator with optional trend,
+ * sparkline chart, and contextual information.
+ */
 export function KPICard({
   label,
   value,
-  subLabel,
+  sublabel,
   change,
   changeLabel,
   trend,
   sparklineData,
-  icon,
-  variant = "default",
-  isLoading = false,
+  icon: Icon,
+  size = "md",
+  currency = "USD",
+  compact = false,
   onClick,
+  badge,
+  badgeVariant = "secondary",
+  isLoading = false,
+  error,
   className,
+  children,
 }: KPICardProps) {
-  const computedTrend: TrendDirection = React.useMemo(() => {
+  // Determine trend from change if not provided
+  const computedTrend = useMemo((): TrendDirection => {
     if (trend) return trend;
-    if (change === undefined || change === 0) return "neutral";
-    return change > 0 ? "up" : "down";
-  }, [change, trend]);
+    if (typeof change === "number") {
+      if (change > 0) return "up";
+      if (change < 0) return "down";
+    }
+    if (sparklineData && sparklineData.length > 1) {
+      return determineTrend(sparklineData);
+    }
+    return "neutral";
+  }, [trend, change, sparklineData]);
 
-  const valueSize = kpiCardVariants[variant].valueSize;
+  // Format value based on type
+  const formattedValue = useMemo(() => {
+    if (typeof value === "string") return value;
+    if (compact) return formatCompact(value);
+    return formatCurrency(value, currency);
+  }, [value, currency, compact]);
 
+  // Get color for change
+  const trendColor = useMemo(() => {
+    switch (computedTrend) {
+      case "up":
+        return semanticColors.positive.DEFAULT;
+      case "down":
+        return semanticColors.negative.DEFAULT;
+      default:
+        return semanticColors.neutral.DEFAULT;
+    }
+  }, [computedTrend]);
+
+  // Size classes
+  const sizeClasses = {
+    sm: {
+      padding: "p-3",
+      title: "text-xs",
+      value: "text-lg font-bold",
+    },
+    md: {
+      padding: "p-4",
+      title: "text-sm",
+      value: "text-xl font-bold",
+    },
+    lg: {
+      padding: "p-6",
+      title: "text-base",
+      value: "text-2xl font-bold",
+    },
+    xl: {
+      padding: "p-8",
+      title: "text-lg",
+      value: "text-3xl font-bold",
+    },
+  };
+
+  // Trend icons
+  const TrendIcon = useMemo(() => {
+    switch (computedTrend) {
+      case "up":
+        return TrendingUp;
+      case "down":
+        return TrendingDown;
+      default:
+        return Minus;
+    }
+  }, [computedTrend]);
+
+  // Loading skeleton
   if (isLoading) {
-    return <KPICardSkeleton variant={variant} />;
+    return <KPICardSkeleton size={size} />;
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Card className={cn("border-destructive/50", className)}>
+        <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
     <Card
       className={cn(
-        kpiCardVariants[variant].padding,
-        "transition-all duration-200",
-        "hover:shadow-lg hover:border-muted-foreground/20",
-        onClick && "cursor-pointer",
+        "relative overflow-hidden transition-all duration-200",
+        onClick && "cursor-pointer hover:shadow-lg hover:border-primary/30",
         className
       )}
       onClick={onClick}
     >
-      <CardContent className="p-0 space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
+      {/* Header with label and optional badge */}
+      <CardHeader className={cn("flex flex-row items-center justify-between space-y-0 pb-2", sizeClasses[size].padding)}>
+        <div className="flex items-center gap-2">
+          {Icon && (
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <Icon className="h-4 w-4 text-primary" />
+            </div>
+          )}
+          <CardTitle className={sizeClasses[size].title + " font-medium text-muted-foreground"}>
+            {label}
+          </CardTitle>
+        </div>
+        {badge && (
+          <Badge variant={badgeVariant}>
+            {badge}
+          </Badge>
+        )}
+      </CardHeader>
 
-        <div className="flex items-end justify-between">
-          <div className="flex items-baseline gap-1">
-            {icon && <span className="mr-2 h-5 w-5 shrink-0 text-muted-foreground">{icon}</span>}
-            <span
-              className={cn(
-                "font-bold tabular-nums tracking-tight",
-                valueSize,
-                computedTrend === "up" && "text-emerald-600 dark:text-emerald-400",
-                computedTrend === "down" && "text-red-600 dark:text-red-400"
+      {/* Main content */}
+      <CardContent className={sizeClasses[size].padding}>
+        <div className="flex flex-col gap-2">
+          {/* Value row */}
+          <div className="flex items-end justify-between">
+            <div className="flex flex-col">
+              {/* Main value with currency formatting */}
+              <div className={cn("tabular-nums", sizeClasses[size].value)}>
+                {formattedValue}
+              </div>
+              
+              {/* Sublabel */}
+              {sublabel && (
+                <p className="text-xs text-muted-foreground mt-1">{sublabel}</p>
               )}
-            >
-              {value}
-            </span>
+            </div>
+
+            {/* Trend indicator */}
+            {typeof change === "number" && (
+              <div className="flex flex-col items-end">
+                <div
+                  className="flex items-center gap-1"
+                  style={{ color: trendColor }}
+                >
+                  <TrendIcon className="h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    {formatPercentage(Math.abs(change))}
+                  </span>
+                </div>
+                {changeLabel && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {changeLabel}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
-          {change !== undefined && (
-            <Badge variant={computedTrend === "up" ? "success" : computedTrend === "down" ? "destructive" : "secondary"} className="font-mono text-xs">
-              <span className="flex items-center gap-0.5">
-                {computedTrend === "up" && <TrendingUp className="h-3 w-3" />}
-                {computedTrend === "down" && <TrendingDown className="h-3 w-3" />}
-                {computedTrend === "neutral" && <Minus className="h-3 w-3" />}
-                <span>
-                  {change >= 0 ? "+" : ""}
-                  {change.toFixed(2)}%
-                </span>
-              </span>
-            </Badge>
+          {/* Sparkline if data provided */}
+          {sparklineData && sparklineData.length > 1 && (
+            <div className="mt-2">
+              <MiniSparkline
+                data={sparklineData}
+                trend={computedTrend}
+              />
+            </div>
           )}
+
+          {/* Custom children */}
+          {children}
         </div>
+      </CardContent>
 
-        {subLabel && <p className="text-xs text-muted-foreground/70">{subLabel}</p>}
-        {changeLabel && <p className="text-xs text-muted-foreground/70">{changeLabel}</p>}
+      {/* Decorative gradient based on trend */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-1 opacity-20"
+        style={{
+          background: `linear-gradient(90deg, ${trendColor}, transparent)`,
+        }}
+      />
+    </Card>
+  );
+}
 
-        {sparklineData && sparklineData.length > 1 && <SparklineBars data={sparklineData} trend={computedTrend} />}
+/**
+ * KPI Card Skeleton for loading states
+ */
+export function KPICardSkeleton({ size = "md" }: { size?: SizeVariant }) {
+  const paddingClass = {
+    sm: "p-3",
+    md: "p-4",
+    lg: "p-6",
+    xl: "p-8",
+  }[size];
+
+  return (
+    <Card className="animate-pulse">
+      <CardHeader className={cn("flex flex-row items-center justify-between space-y-0 pb-2", paddingClass)}>
+        <div className="h-4 w-24 rounded bg-muted" />
+        <div className="h-5 w-12 rounded bg-muted" />
+      </CardHeader>
+      <CardContent className={paddingClass}>
+        <div className="flex flex-col gap-2">
+          <div className="h-8 w-32 rounded bg-muted" />
+          <div className="h-4 w-20 rounded bg-muted" />
+        </div>
       </CardContent>
     </Card>
   );
 }
 
-export interface KPICardGridProps {
-  children: React.ReactNode;
-  columns?: 2 | 3 | 4;
+/**
+ * Grid of KPI Cards
+ */
+export interface KPIGridProps {
+  cards: Array<KPICardProps>;
+  /** Number of columns - uses Tailwind responsive classes */
+  columns?: {
+    default?: number;
+    sm?: number;
+    md?: number;
+    lg?: number;
+    xl?: number;
+  };
+  /** Gap between cards */
+  gap?: "sm" | "md" | "lg";
   className?: string;
 }
 
-export function KPICardGrid({ children, columns = 4, className }: KPICardGridProps) {
+export function KPIGrid({
+  cards,
+  gap = "md",
+  className,
+}: KPIGridProps) {
+  const gapClass = {
+    sm: "gap-2",
+    md: "gap-4",
+    lg: "gap-6",
+  }[gap];
+
   return (
-    <div
-      className={cn(
-        "grid gap-4",
-        columns === 2 && "grid-cols-1 sm:grid-cols-2",
-        columns === 3 && "grid-cols-1 sm:grid-cols-2 md:grid-cols-3",
-        columns === 4 && "grid-cols-1 sm:grid-cols-2 md:grid-cols-4"
-      )}
-    >
-      {children}
+    <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4", gapClass, className)}>
+      {cards.map((card, index) => (
+        <KPICard key={index} {...card} />
+      ))}
     </div>
   );
 }
 
-export function KPICardSkeleton({ variant = "default" }: { variant?: "default" | "compact" | "large" | "minimal" }) {
+/**
+ * Mini KPI Stat for inline display
+ */
+export interface MiniKPIStatProps {
+  label: string;
+  value: number | string;
+  change?: number;
+  trend?: TrendDirection;
+  size?: "sm" | "md";
+  className?: string;
+}
+
+export function MiniKPIStat({
+  label,
+  value,
+  change,
+  trend = "neutral",
+  size = "md",
+  className,
+}: MiniKPIStatProps) {
+  const trendColor = useMemo(() => {
+    if (change !== undefined) {
+      if (change > 0) return semanticColors.positive.DEFAULT;
+      if (change < 0) return semanticColors.negative.DEFAULT;
+    }
+    return semanticColors.neutral.DEFAULT;
+  }, [change]);
+
+  const TrendIcon = useMemo(() => {
+    if (change !== undefined) {
+      if (change > 0) return TrendingUp;
+      if (change < 0) return TrendingDown;
+    }
+    return Minus;
+  }, [change]);
+
+  const sizeClass = {
+    sm: "text-xs",
+    md: "text-sm",
+  }[size];
+
   return (
-    <Card className={kpiCardVariants[variant].padding}>
-      <CardContent className="p-0 space-y-3">
-        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
-        <div className="flex items-end justify-between">
-          <div className={cn("h-8 w-32 rounded bg-muted animate-pulse", variant === "large" && "h-12 w-40")} />
-          <div className="h-5 w-16 rounded bg-muted animate-pulse" />
-        </div>
-        {variant !== "minimal" && <div className="h-2 w-20 rounded bg-muted animate-pulse" />}
-      </CardContent>
-    </Card>
-  );
-}
-
-export interface KPIGroupProps {
-  kpis: Array<{
-    label: string;
-    value: string | number;
-    change?: number;
-    changeLabel?: string;
-    trend?: TrendDirection;
-    sparklineData?: number[];
-    icon?: React.ReactNode;
-    onClick?: () => void;
-  }>;
-  columns?: 2 | 3 | 4;
-  isLoading?: boolean;
-  error?: Error | null;
-  variant?: "default" | "compact" | "large" | "minimal";
-}
-
-export function KPIGroup({ kpis, columns = 4, isLoading, error, variant = "default" }: KPIGroupProps) {
-  if (error) {
-    return (
-      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center text-destructive">
-        Failed to load KPI data. Please try again.
+    <div className={cn("flex flex-col", className)}>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <div className="flex items-center gap-2">
+        <span className={cn("font-semibold", sizeClass)}>{value}</span>
+        {change !== undefined && (
+          <div
+            className="flex items-center gap-0.5"
+            style={{ color: trendColor }}
+          >
+            <TrendIcon className="h-3 w-3" />
+            <span className="text-xs">{formatPercentage(Math.abs(change))}</span>
+          </div>
+        )}
       </div>
-    );
-  }
-
-  return (
-    <KPICardGrid columns={columns}>
-      {isLoading
-        ? Array.from({ length: kpis.length || 4 }).map((_, i) => <KPICardSkeleton key={i} variant={variant} />)
-        : kpis.map((kpi) => (
-            <KPICard
-              key={kpi.label}
-              label={kpi.label}
-              value={kpi.value}
-              change={kpi.change}
-              changeLabel={kpi.changeLabel}
-              trend={kpi.trend}
-              sparklineData={kpi.sparklineData}
-              icon={kpi.icon}
-              variant={variant}
-              onClick={kpi.onClick}
-            />
-          ))}
-    </KPICardGrid>
-  );
-}
-
-function SparklineBars({ data, trend }: { data: number[]; trend: TrendDirection }) {
-  if (!data || data.length < 2) return null;
-
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-
-  return (
-    <div className="flex h-8 w-full items-end gap-[2px]">
-      {data.map((value, index) => {
-        const height = ((value - min) / range) * 100;
-        const barColor = trend === "up" ? "bg-emerald-500" : trend === "down" ? "bg-red-500" : "bg-slate-400";
-        return <div key={index} className={cn("w-[3px] rounded-t opacity-60 transition-all", barColor)} style={{ height: `${Math.max(height, 5)}%` }} />;
-      })}
     </div>
   );
 }
