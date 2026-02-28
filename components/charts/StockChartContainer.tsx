@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { StockChart, IndicatorControls, DEFAULT_INDICATOR_SETTINGS } from '@/components/charts';
-import type { IndicatorSettings } from '@/components/charts';
-import type { HistoricalCandle, IndicatorData } from '@/components/charts';
+import { StockChart } from '@/components/charts/StockChart';
+import { IndicatorControls, DEFAULT_INDICATOR_SETTINGS } from '@/components/charts/IndicatorControls';
+import type { IndicatorSettings } from '@/components/charts/IndicatorControls';
+import type { HistoricalCandle, IndicatorData } from '@/components/charts/StockChart';
 import { useHistoricalData } from '@/lib/api';
 
 export interface StockChartContainerProps {
