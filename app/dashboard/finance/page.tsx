@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { KPIGroup } from "@/components/dashboard/kpi-card";
+import { KPIGrid } from "@/components/dashboard/kpi-card";
 import { PriceLineChart, LineChart } from "@/components/charts/line-chart";
 import { useMarketIndices } from "@/lib/api";
 import { chartColors } from "@/lib/design-tokens";
@@ -98,7 +98,7 @@ export default function FinanceDashboardPage() {
           {error ? (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center text-destructive">Failed to load market data. Please try again.</div>
           ) : (
-            <KPIGroup kpis={kpiData} columns={3} isLoading={isLoading} variant="default" />
+            <KPIGrid kpis={kpiData} columns={3} isLoading={isLoading} variant="default" />
           )}
         </section>
 

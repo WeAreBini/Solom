@@ -150,32 +150,27 @@ export interface MACDValue {
   histogram: number;
 }
 
-// Bollinger Bands value type
-export interface BollingerBandValue {
-  time: string;
-  upper: number;
-  middle: number;
-  lower: number;
-}
+// Indicator type
+export type IndicatorType = 'sma' | 'ema' | 'rsi' | 'macd';
 
-// Indicator configuration type
+// Indicator configuration
 export interface IndicatorConfig {
-  type: 'sma' | 'ema' | 'rsi' | 'macd' | 'bollingerBands';
+  type: IndicatorType;
   enabled: boolean;
   params: Record<string, number>;
+  color?: string;
 }
 
-// Chart indicators type (all calculated indicator data)
+// Chart indicators (all calculated indicator data)
 export interface ChartIndicators {
   sma: IndicatorValue[];
   ema: IndicatorValue[];
   rsi: IndicatorValue[];
   macd: MACDValue[];
-  bollingerBands: BollingerBandValue[];
   volume: IndicatorValue[];
 }
 
-// Chart data type (historical + indicators)
+// Chart data (historical + indicators)
 export interface ChartData {
   candlestick: HistoricalDataPoint[];
   indicators: ChartIndicators;

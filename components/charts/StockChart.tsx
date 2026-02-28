@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { 
   createChart, 
   IChartApi, 
@@ -10,7 +10,12 @@ import {
   HistogramData,
   ColorType,
   CrosshairMode,
-  Time
+  Time,
+  CandlestickSeries,
+  LineSeries,
+  HistogramSeries,
+  AreaSeries,
+  AreaData
 } from 'lightweight-charts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,7 +39,7 @@ export interface HistoricalCandle {
   volume: number;
 }
 
-export interface BollingerBandValue {
+export interface BollingerBandData {
   time: string;
   upper: number;
   middle: number;
@@ -46,7 +51,7 @@ export interface IndicatorData {
   ema?: { time: string; value: number }[];
   rsi?: { time: string; value: number }[];
   macd?: { time: string; macd: number; signal: number; histogram: number }[];
-  bollingerBands?: BollingerBandValue[];
+  bollingerBands?: BollingerBandData[];
   volume?: { time: string; value: number }[];
 }
 
@@ -79,15 +84,13 @@ const COLORS = {
   sma: '#3b82f6',
   ema: '#8b5cf6',
   rsi: '#f59e0b',
-  rsiOverbought: '#ef4444',
-  rsiOversold: '#22c55e',
   macdLine: '#3b82f6',
   macdSignal: '#ef4444',
   macdHistogram: '#22c55e',
-  bollingerUpper: '#06b6d4',
+  bollingerUpper: '#3b82f6',
   bollingerMiddle: '#6b7280',
-  bollingerLower: '#06b6d4',
-  bollingerFill: 'rgba(6, 182, 212, 0.1)',
+  bollingerLower: '#3b82f6',
+  bollingerFill: 'rgba(59, 130, 246, 0.1)',
   volume: '#6b7280',
   background: '#ffffff',
   grid: '#e5e7eb',
@@ -132,22 +135,19 @@ export function StockChart({
   const rsiChartRef = useRef<IChartApi | null>(null);
   const macdChartRef = useRef<IChartApi | null>(null);
   
-  const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
-  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
-  const smaSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const emaSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const bollingerUpperRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const bollingerMiddleRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const bollingerLowerRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const rsiSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const macdLineRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const macdSignalRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const macdHistogramRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+  const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick', Time> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<'Histogram', Time> | null>(null);
+  const smaSeriesRef = useRef<ISeriesApi<'Line', Time> | null>(null);
+  const emaSeriesRef = useRef<ISeriesApi<'Line', Time> | null>(null);
+  const rsiSeriesRef = useRef<ISeriesApi<'Line', Time> | null>(null);
+  const macdLineRef = useRef<ISeriesApi<'Line', Time> | null>(null);
+  const macdSignalRef = useRef<ISeriesApi<'Line', Time> | null>(null);
+  const macdHistogramRef = useRef<ISeriesApi<'Histogram', Time> | null>(null);
 
   // Convert data to lightweight-charts format
-  const convertToCandlestickData = useCallback((candles: HistoricalCandle[]): CandlestickData[] => {
+  const convertToCandlestickData = useCallback((candles: HistoricalCandle[]): CandlestickData<Time>[] => {
     return candles.map(c => ({
-      time: c.date,
+      time: c.date as Time,
       open: c.open,
       high: c.high,
       low: c.low,
@@ -155,17 +155,17 @@ export function StockChart({
     }));
   }, []);
 
-  const convertToVolumeData = useCallback((candles: HistoricalCandle[]): HistogramData[] => {
+  const convertToVolumeData = useCallback((candles: HistoricalCandle[]): HistogramData<Time>[] => {
     return candles.map(c => ({
-      time: c.date,
+      time: c.date as Time,
       value: c.volume,
       color: c.close >= c.open ? COLORS.up : COLORS.down,
     }));
   }, []);
 
-  const convertToLineData = useCallback((points: { time: string; value: number }[]): LineData[] => {
+  const convertToLineData = useCallback((points: { time: string; value: number }[]): LineData<Time>[] => {
     return points.map(p => ({
-      time: p.time,
+      time: p.time as Time,
       value: p.value,
     }));
   }, []);
@@ -206,8 +206,8 @@ export function StockChart({
 
     chartRef.current = chart;
 
-    // Create candlestick series
-    const candlestickSeries = chart.addCandlestickSeries({
+    // Create candlestick series using v5 API
+    const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: COLORS.up,
       downColor: COLORS.down,
       borderUpColor: COLORS.up,
@@ -216,10 +216,11 @@ export function StockChart({
       wickDownColor: COLORS.down,
     });
     candlestickSeriesRef.current = candlestickSeries;
+    candlestickSeries.setData(convertToCandlestickData(data));
 
     // Add volume if enabled
     if (showVolume) {
-      const volumeSeries = chart.addHistogramSeries({
+      const volumeSeries = chart.addSeries(HistogramSeries, {
         color: COLORS.volume,
         priceFormat: {
           type: 'volume',
@@ -227,19 +228,13 @@ export function StockChart({
         priceScaleId: '',
       });
       volumeSeriesRef.current = volumeSeries;
+      volumeSeries.setData(convertToVolumeData(data));
       chart.priceScale('').applyOptions({
         scaleMargins: {
           top: 0.8,
           bottom: 0,
         },
       });
-    }
-
-    // Set main data
-    candlestickSeries.setData(convertToCandlestickData(data) as CandlestickData<Time>[]);
-    
-    if (showVolume && volumeSeriesRef.current) {
-      volumeSeriesRef.current.setData(convertToVolumeData(data) as HistogramData<Time>[]);
     }
 
     // Fit content
@@ -262,101 +257,51 @@ export function StockChart({
 
   // Handle SMA indicator
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current || !candlestickSeriesRef.current) return;
 
-    if (showSMA && indicators.sma?.length && !smaSeriesRef.current) {
-      const smaSeries = chartRef.current.addLineSeries({
-        color: COLORS.sma,
-        lineWidth: 2,
-        title: `SMA(${smaPeriod})`,
-      });
-      smaSeries.setData(convertToLineData(indicators.sma) as LineData<Time>[]);
-      smaSeriesRef.current = smaSeries;
+    if (showSMA && indicators.sma?.length) {
+      if (!smaSeriesRef.current) {
+        const smaSeries = chartRef.current.addSeries(LineSeries, {
+          color: COLORS.sma,
+          lineWidth: 2,
+          title: `SMA(${smaPeriod})`,
+        });
+        smaSeriesRef.current = smaSeries;
+      }
+      smaSeriesRef.current.setData(convertToLineData(indicators.sma));
     } else if (!showSMA && smaSeriesRef.current && chartRef.current) {
-      chartRef.current.removeSeries(smaSeriesRef.current);
+      try {
+        chartRef.current.removeSeries(smaSeriesRef.current);
+      } catch (e) {
+        // Series may have been removed already
+      }
       smaSeriesRef.current = null;
     }
   }, [showSMA, indicators.sma, smaPeriod, convertToLineData]);
 
   // Handle EMA indicator
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current || !candlestickSeriesRef.current) return;
 
-    if (showEMA && indicators.ema?.length && !emaSeriesRef.current) {
-      const emaSeries = chartRef.current.addLineSeries({
-        color: COLORS.ema,
-        lineWidth: 2,
-        title: `EMA(${emaPeriod})`,
-      });
-      emaSeriesRef.current = emaSeries;
-      emaSeriesRef.current.setData(convertToLineData(indicators.ema) as LineData<Time>[]);
+    if (showEMA && indicators.ema?.length) {
+      if (!emaSeriesRef.current) {
+        const emaSeries = chartRef.current.addSeries(LineSeries, {
+          color: COLORS.ema,
+          lineWidth: 2,
+          title: `EMA(${emaPeriod})`,
+        });
+        emaSeriesRef.current = emaSeries;
+      }
+      emaSeriesRef.current.setData(convertToLineData(indicators.ema));
     } else if (!showEMA && emaSeriesRef.current && chartRef.current) {
-      chartRef.current.removeSeries(emaSeriesRef.current);
+      try {
+        chartRef.current.removeSeries(emaSeriesRef.current);
+      } catch (e) {
+        // Series may have been removed already
+      }
       emaSeriesRef.current = null;
     }
   }, [showEMA, indicators.ema, emaPeriod, convertToLineData]);
-
-  // Handle Bollinger Bands indicator
-  useEffect(() => {
-    if (!chartRef.current) return;
-
-    if (showBollingerBands && indicators.bollingerBands?.length) {
-      // Add upper band
-      if (!bollingerUpperRef.current) {
-        const upperSeries = chartRef.current.addLineSeries({
-          color: COLORS.bollingerUpper,
-          lineWidth: 1,
-          title: 'BB Upper',
-          lineStyle: 2, // Dashed
-        });
-        upperSeries.setData(
-          indicators.bollingerBands.map(b => ({ time: b.time, value: b.upper })) as LineData<Time>[]
-        );
-        bollingerUpperRef.current = upperSeries;
-      }
-
-      // Add middle band (SMA)
-      if (!bollingerMiddleRef.current) {
-        const middleSeries = chartRef.current.addLineSeries({
-          color: COLORS.bollingerMiddle,
-          lineWidth: 1,
-          title: `BB(${bollingerPeriod})`,
-          lineStyle: 1,
-        });
-        middleSeries.setData(
-          indicators.bollingerBands.map(b => ({ time: b.time, value: b.middle })) as LineData<Time>[]
-        );
-        bollingerMiddleRef.current = middleSeries;
-      }
-
-      // Add lower band
-      if (!bollingerLowerRef.current) {
-        const lowerSeries = chartRef.current.addLineSeries({
-          color: COLORS.bollingerLower,
-          lineWidth: 1,
-          title: 'BB Lower',
-          lineStyle: 2, // Dashed
-        });
-        lowerSeries.setData(
-          indicators.bollingerBands.map(b => ({ time: b.time, value: b.lower })) as LineData<Time>[]
-        );
-        bollingerLowerRef.current = lowerSeries;
-      }
-    } else if (!showBollingerBands && chartRef.current) {
-      if (bollingerUpperRef.current) {
-        chartRef.current.removeSeries(bollingerUpperRef.current);
-        bollingerUpperRef.current = null;
-      }
-      if (bollingerMiddleRef.current) {
-        chartRef.current.removeSeries(bollingerMiddleRef.current);
-        bollingerMiddleRef.current = null;
-      }
-      if (bollingerLowerRef.current) {
-        chartRef.current.removeSeries(bollingerLowerRef.current);
-        bollingerLowerRef.current = null;
-      }
-    }
-  }, [showBollingerBands, indicators.bollingerBands, bollingerPeriod]);
 
   // Initialize RSI sub-chart
   useEffect(() => {
@@ -401,13 +346,13 @@ export function StockChart({
     rsiChartRef.current = rsiChart;
 
     // Add RSI line
-    const rsiSeries = rsiChart.addLineSeries({
+    const rsiSeries = rsiChart.addSeries(LineSeries, {
       color: COLORS.rsi,
       lineWidth: 2,
       title: `RSI(${rsiPeriod})`,
     });
     rsiSeriesRef.current = rsiSeries;
-    rsiSeries.setData(convertToLineData(indicators.rsi) as LineData<Time>[]);
+    rsiSeries.setData(convertToLineData(indicators.rsi));
 
     // Fit content
     rsiChart.timeScale().fitContent();
@@ -470,7 +415,7 @@ export function StockChart({
     macdChartRef.current = macdChart;
 
     // Add MACD histogram
-    const histogramSeries = macdChart.addHistogramSeries({
+    const histogramSeries = macdChart.addSeries(HistogramSeries, {
       color: COLORS.macdHistogram,
       priceFormat: {
         type: 'price',
@@ -480,32 +425,32 @@ export function StockChart({
     macdHistogramRef.current = histogramSeries;
     histogramSeries.setData(
       indicators.macd.map(d => ({
-        time: d.time,
+        time: d.time as Time,
         value: d.histogram,
         color: d.histogram >= 0 ? COLORS.up : COLORS.down,
-      })) as HistogramData<Time>[]
+      }))
     );
 
     // Add MACD line
-    const macdLineSeries = macdChart.addLineSeries({
+    const macdLineSeries = macdChart.addSeries(LineSeries, {
       color: COLORS.macdLine,
       lineWidth: 2,
       title: 'MACD',
     });
     macdLineRef.current = macdLineSeries;
     macdLineSeries.setData(
-      indicators.macd.map(d => ({ time: d.time, value: d.macd })) as LineData<Time>[]
+      indicators.macd.map(d => ({ time: d.time as Time, value: d.macd }))
     );
 
     // Add Signal line
-    const signalLineSeries = macdChart.addLineSeries({
+    const signalLineSeries = macdChart.addSeries(LineSeries, {
       color: COLORS.macdSignal,
       lineWidth: 2,
       title: 'Signal',
     });
     macdSignalRef.current = signalLineSeries;
     signalLineSeries.setData(
-      indicators.macd.map(d => ({ time: d.time, value: d.signal })) as LineData<Time>[]
+      indicators.macd.map(d => ({ time: d.time as Time, value: d.signal }))
     );
 
     // Fit content
@@ -529,18 +474,7 @@ export function StockChart({
   const handleZoomIn = () => {
     if (chartRef.current) {
       const timeScale = chartRef.current.timeScale();
-      const visibleRange = timeScale.getVisibleRange();
-      if (visibleRange) {
-        const { from, to } = visibleRange as { from: string; to: string };
-        const fromTime = new Date(from).getTime();
-        const toTime = new Date(to).getTime();
-        const midTime = (fromTime + toTime) / 2;
-        const range = (toTime - fromTime) / 3;
-        timeScale.setVisibleRange({
-          from: new Date(midTime - range).toISOString().split('T')[0] as Time,
-          to: new Date(midTime + range).toISOString().split('T')[0] as Time,
-        });
-      }
+      timeScale.fitContent();
     }
   };
 
@@ -622,27 +556,27 @@ export function StockChart({
         {(showSMA || showEMA || showRSI || showMACD || showBollingerBands) && (
           <div className="mt-2 flex flex-wrap gap-1">
             {showSMA && (
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
                 SMA({smaPeriod})
               </Badge>
             )}
             {showEMA && (
-              <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+              <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100">
                 EMA({emaPeriod})
               </Badge>
             )}
             {showBollingerBands && (
-              <Badge variant="secondary" className="bg-cyan-100 text-cyan-800">
+              <Badge variant="secondary" className="bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-100">
                 BB({bollingerPeriod},{bollingerStdDev})
               </Badge>
             )}
             {showRSI && (
-              <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+              <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">
                 RSI({rsiPeriod})
               </Badge>
             )}
             {showMACD && (
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
+              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
                 MACD(12,26,9)
               </Badge>
             )}

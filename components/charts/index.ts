@@ -3,7 +3,7 @@ export { IndicatorControls, DEFAULT_INDICATOR_SETTINGS } from './IndicatorContro
 export type { 
   HistoricalCandle, 
   IndicatorData,
-  BollingerBandValue,
+  BollingerBandData,
   StockChartProps 
 } from './StockChart';
 export type { 
@@ -11,3 +11,6 @@ export type {
   IndicatorControlsProps, 
   IndicatorType 
 } from './IndicatorControls';
+export { PriceLineChart, LineChart, MiniLineChart } from './line-chart';
+export { CandlestickChart, SimpleCandlestickChart, PriceBarChart } from './candlestick-chart';
+export { Sparkline } from './sparkline';
