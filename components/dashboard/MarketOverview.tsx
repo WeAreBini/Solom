@@ -2,11 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { trpc } from "@/lib/trpc";
+import { useMarketIndices } from "@/lib/api";
 import { TrendingUp, TrendingDown, Activity } from "lucide-react";
 
 export function MarketOverview() {
-  const { data: indices, isLoading, error } = trpc.finance.getMarketIndices.useQuery();
+  const { data: indices, isLoading, error } = useMarketIndices();
 
   if (isLoading) {
     return <MarketOverviewSkeleton />;

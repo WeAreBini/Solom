@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { trpc } from "@/lib/trpc";
+import { useStockSearch } from "@/lib/api";
 import { Search, TrendingUp, TrendingDown, Plus, Check, Loader2 } from "lucide-react";
 
 interface StockSearchProps {
@@ -34,10 +34,7 @@ export function StockSearch({ onAddToWatchlist, watchlistSymbols = new Set() }: 
     };
   }, [query]);
 
-  const { data: results, isLoading, error } = trpc.finance.searchStocks.useQuery(
-    { query: searchQuery },
-    { enabled: searchQuery.length >= 0 }
-  );
+  const { data: results, isLoading, error } = useStockSearch(searchQuery, searchQuery.length >= 1);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
