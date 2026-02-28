@@ -1,0 +1,154 @@
+// Solom Database Schema
+// Prisma ORM 7.x with PostgreSQL
+
+generator client {
+  provider      = "prisma-client"
+  output        = "../generated/prisma"
+  compilerBuild = "fast"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Council {
+  id             String        @id @default(uuid())
+  query          String
+  status         CouncilStatus @default(PENDING)
+  consensus      String?
+  reasoningChain Json?         @map("reasoning_chain")
+  confidence     Float?
+  members CouncilMember[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  @@map("councils")
+}
+
+enum CouncilStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model CouncilMember {
+  id         String       @id @default(uuid())
+  councilId  String       @map("council_id")
+  agentName  AgentRole    @map("agent_name")
+  status     MemberStatus @default(IDLE)
+  findings   String?
+  confidence Float?
+  sources    Json?
+  council Council @relation(fields: [councilId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+  @@map("council_members")
+}
+
+enum AgentRole {
+  RESEARCHER
+  FACT_CHECKER
+  CONTRARIAN
+  SYNTHESIST
+  EXECUTOR
+}
+
+enum MemberStatus {
+  IDLE
+  WORKING
+  COMPLETE
+  ERROR
+}
+
+model Task {
+  id     String     @id @default(uuid())
+  type   TaskType
+  status TaskStatus @default(PENDING)
+  input  Json
+  output Json?
+  error  String?
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  @@map("tasks")
+}
+
+enum TaskType {
+  COUNCIL
+  BROWSE
+  FIREHOSE
+  SYSTEM2
+}
+
+enum TaskStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model BrowserSession {
+  id           String  @id @default(uuid())
+  taskId       String  @map("task_id")
+  playwrightId String? @map("playwright_id")
+  screenshots String[]
+  actionsLog  Json     @map("actions_log")
+  finalUrl    String?  @map("final_url")
+  createdAt DateTime  @default(now()) @map("created_at")
+  closedAt  DateTime? @map("closed_at")
+  @@map("browser_sessions")
+}
+
+model FirehoseEvent {
+  id         String  @id @default(uuid())
+  source     String
+  externalId String? @map("external_id")
+  author  String?
+  content String
+  url     String?
+  sentiment Float?
+  topics    String[]
+  entities  Json?
+  processed   Boolean   @default(false)
+  processedAt DateTime? @map("processed_at")
+  eventAt   DateTime @map("event_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  @@map("firehose_events")
+}
+
+model UserPortfolio {
+  id        String           @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  stocks    PortfolioStock[]
+  @@map("user_portfolios")
+}
+
+model PortfolioStock {
+  id          String        @id @default(cuid())
+  portfolioId String
+  symbol      String
+  shares      Float
+  avgPrice    Float
+  portfolio   UserPortfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  @@map("portfolio_stocks")
+}
+
+model Watchlist {
+  id      String   @id @default(cuid())
+  userId  String
+  symbol  String
+  addedAt DateTime @default(now())
+  @@map("watchlists")
+}
+
+model UserSettings {
+  id          String @id @default(cuid())
+  userId      String @unique
+  preferences Json
+  @@map("user_settings")
+}
