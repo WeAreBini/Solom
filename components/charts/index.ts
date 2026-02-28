@@ -1,11 +1,26 @@
-// Chart components index
+// Chart Components
+// Export all chart-related components from a single entry point
 
 export { Sparkline, MiniSparkline } from "./sparkline";
 export type { SparklineProps } from "./sparkline";
 
-export { LineChart, PriceLineChart, MiniLineChart } from "./line-chart";
-export type { LineChartProps, PriceLineChartProps } from "./line-chart";
+export {
+  LineChartComponent,
+  PriceLineChart,
+  MiniLineChart,
+} from "./line-chart";
+export type {
+  LineChartProps,
+  PriceLineChartProps,
+  BaseChartProps,
+} from "./line-chart";
 
-// TradingView Lightweight Charts integration
-export { StockChart } from "../Chart";
-export type { StockChartProps, StockChartRef, ChartType } from "../Chart";
+export {
+  CandlestickChart,
+  SimpleCandlestickChart,
+  PriceBarChart,
+} from "./candlestick-chart";
+export type {
+  CandlestickChartProps,
+  OHLCDataPoint,
+} from "./candlestick-chart";
