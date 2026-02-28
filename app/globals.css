@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    /* Base colors */
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
@@ -24,6 +25,16 @@
     --input: 240 5.9% 90%;
     --ring: 262.1 83.3% 57.8%;
     --radius: 0.75rem;
+    
+    /* Finance-specific semantic colors */
+    --positive: 160 84% 39%;
+    --positive-foreground: 160 84% 95%;
+    --negative: 0 84% 60%;
+    --negative-foreground: 0 84% 98%;
+    --warning: 48 96% 53%;
+    --warning-foreground: 48 96% 10%;
+    
+    /* Chart colors */
     --chart-1: 262 83% 58%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -32,6 +43,7 @@
   }
 
   .dark {
+    /* Base colors - dark mode */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
@@ -51,6 +63,16 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 263.4 70% 50.4%;
+    
+    /* Finance-specific semantic colors - dark mode */
+    --positive: 160 84% 60%;
+    --positive-foreground: 160 84% 10%;
+    --negative: 0 72% 51%;
+    --negative-foreground: 0 72% 98%;
+    --warning: 48 96% 53%;
+    --warning-foreground: 48 96% 10%;
+    
+    /* Chart colors */
     --chart-1: 263 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -65,5 +87,51 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* Financial number styling - improves readability */
+  .font-financial {
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.01em;
+  }
+  
+  /* KPI value styling */
+  .kpi-value {
+    @apply text-2xl font-bold font-financial tracking-tight;
+  }
+  
+  .kpi-value-large {
+    @apply text-4xl font-bold font-financial tracking-tight;
+  }
+  
+  .kpi-label {
+    @apply text-sm font-medium text-muted-foreground;
+  }
+  
+  /* Price change indicators */
+  .price-up {
+    @apply text-emerald-600 dark:text-emerald-400;
+  }
+  
+  .price-down {
+    @apply text-red-600 dark:text-red-400;
+  }
+  
+  /* Dashboard grid system */
+  .dashboard-grid {
+    @apply grid gap-6;
+    @apply grid-cols-1;
+    @apply md:grid-cols-2;
+    @apply lg:grid-cols-3;
+    @apply xl:grid-cols-4;
+  }
+}
+
+@layer utilities {
+  /* Animate number changes */
+  .animate-number {
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
   }
 }
