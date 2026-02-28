@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMarketMovers } from '@/lib/fmp';
 import type { MarketMover } from '@/lib/types/stock';
+import { parseLimitParam } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,9 +21,21 @@ export async function GET(request: NextRequest): Promise<NextResponse<MoversResp
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'gainers', 'losers', or null for both
     const limitParam = searchParams.get('limit');
-    const limit = limitParam ? parseInt(limitParam, 10) : 10;
+    const limit = parseLimitParam(limitParam);
 
-    if (limit < 1 || limit > 50) {
+    if (limit === null) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Limit must be a valid number between 1 and 50',
+          gainersCount: 0,
+          losersCount: 0,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (limit > 50) {
       return NextResponse.json(
         {
           success: false,

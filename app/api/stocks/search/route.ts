@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchStocks } from '@/lib/fmp';
 import type { StockSearchResult } from '@/lib/types/stock';
+import { parseLimitParam } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchResp
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || searchParams.get('query');
     const limitParam = searchParams.get('limit');
-    const limit = limitParam ? parseInt(limitParam, 10) : 10;
+    const limit = parseLimitParam(limitParam);
 
     if (!query) {
       return NextResponse.json(
@@ -40,7 +41,18 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchResp
       );
     }
 
-    if (limit < 1 || limit > 100) {
+    if (limit === null) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Limit must be a valid number between 1 and 100',
+          count: 0,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (limit > 100) {
       return NextResponse.json(
         {
           success: false,
