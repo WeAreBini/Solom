@@ -1,6 +1,6 @@
 import { StockSearchResult, StockProfile, StockQuote, MarketIndex, MarketMover } from './types/stock';
 
-const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
+const FMP_BASE_URL = 'https://financialmodelingprep.com/stable';
 const FMP_API_KEY = process.env.FMP_API_KEY || '';
 
 // Simple in-memory cache
@@ -118,7 +118,7 @@ export async function searchStocks(query: string, limit: number = 10): Promise<S
   }
   
   const results = await fetchFMP<StockSearchResult[]>(
-    '/search',
+    '/search-symbol',
     { query, limit },
     60 // Cache for 60 minutes since company names don't change often
   );
@@ -132,8 +132,8 @@ export async function searchStocks(query: string, limit: number = 10): Promise<S
 export async function getStockProfile(symbol: string): Promise<StockProfile | null> {
   try {
     const results = await fetchFMP<StockProfile[]>(
-      `/profile/${symbol}`,
-      undefined,
+      '/profile',
+      { symbol },
       30 // Cache for 30 minutes
     );
     
@@ -150,8 +150,8 @@ export async function getStockProfile(symbol: string): Promise<StockProfile | nu
 export async function getStockQuote(symbol: string): Promise<StockQuote | null> {
   try {
     const results = await fetchFMP<StockQuote[]>(
-      `/quote/${symbol}`,
-      undefined,
+      '/quote',
+      { symbol },
       1 // Cache for 1 minute (real-time data)
     );
     
@@ -170,8 +170,8 @@ export async function getMultipleQuotes(symbols: string[]): Promise<StockQuote[]
   
   try {
     const results = await fetchFMP<StockQuote[]>(
-      `/quote/${symbols.join(',')}`,
-      undefined,
+      '/batch-quote',
+      { symbols: symbols.join(',') },
       1 // Cache for 1 minute
     );
     
@@ -201,8 +201,8 @@ export async function getMarketIndices(): Promise<MarketIndex[]> {
   
   try {
     const results = await fetchFMP<StockQuote[]>(
-      `/quote/${indicesSymbols.join(',')}`,
-      undefined,
+      '/batch-quote',
+      { symbols: indicesSymbols.join(',') },
       1 // Cache for 1 minute
     );
     
@@ -226,14 +226,14 @@ export async function getMarketMovers(): Promise<{ gainers: MarketMover[]; loser
   try {
     // Fetch gainers
     const gainers = await fetchFMP<MarketMover[]>(
-      '/stock_market/gainers',
+      '/biggest-gainers',
       undefined,
       5 // Cache for 5 minutes
     );
     
     // Fetch losers
     const losers = await fetchFMP<MarketMover[]>(
-      '/stock_market/losers',
+      '/biggest-losers',
       undefined,
       5 // Cache for 5 minutes
     );

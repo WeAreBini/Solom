@@ -3,8 +3,8 @@ export interface StockSearchResult {
   symbol: string;
   name: string;
   currency: string;
-  stockExchange: string;
-  exchangeShortName: string;
+  exchangeFullName: string;
+  exchange: string;
 }
 
 // Stock profile type
