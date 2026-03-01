@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, TooltipProps } from "recharts";
+import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
 import { chartColors } from "@/lib/design-tokens";
 
@@ -97,7 +97,7 @@ export function Sparkline({
   );
 }
 
-function CustomTooltip({ active, payload }: TooltipProps<number, string>) {
+function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<{ value?: number }> }) {
   if (!active || !payload || payload.length === 0) return null;
   const value = payload[0].value as number;
   return (

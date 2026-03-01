@@ -8,7 +8,6 @@ import {
   YAxis,
   ResponsiveContainer,
   Tooltip,
-  TooltipProps,
   CartesianGrid,
 } from "recharts";
 import { cn } from "@/lib/utils";
@@ -127,7 +126,7 @@ function formatVolume(value: number): string {
 function CandlestickTooltip({
   active,
   payload,
-}: TooltipProps<number, string>) {
+}: { active?: boolean; payload?: Array<{ payload: ChartDataPoint }> }) {
   if (!active || !payload || payload.length === 0) return null;
 
   const data = (payload[0]?.payload as ChartDataPoint) || {};

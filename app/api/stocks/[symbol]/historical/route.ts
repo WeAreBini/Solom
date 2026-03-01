@@ -57,6 +57,7 @@ function calculateIndicators(
     ema: [],
     rsi: [],
     macd: [],
+    bollingerBands: [],
     volume: data.map(d => ({ time: d.date, value: d.volume })),
   };
 

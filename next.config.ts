@@ -15,7 +15,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Output standalone for Docker/Kubernetes deployments
-  output: 'standalone',
+  // Disabled on Windows dev: Turbopack chunk filenames contain colons which Windows doesn't support
+  // output: 'standalone',
   
   // Image optimization disabled (using external CDN or static assets)
   images: {

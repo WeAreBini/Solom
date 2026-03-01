@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { KPIGroup } from "@/components/dashboard/kpi-card";
+import { KPIGrid } from "@/components/dashboard/kpi-card";
 import { PriceLineChart, LineChart } from "@/components/charts/line-chart";
 import { useMarketIndices } from "@/lib/api";
 import { chartColors } from "@/lib/design-tokens";
@@ -45,7 +45,7 @@ export default function FinanceDashboardPage() {
       changeLabel: "Today",
       trend: index.changePercent >= 0 ? ("up" as const) : ("down" as const),
       sparklineData: sparklineArrays[i] || [],
-      icon: i === 0 ? <BarChart3 className="h-5 w-5" /> : undefined,
+      icon: i === 0 ? BarChart3 : undefined,
     }));
   }, [indices, sparklineData.sp500, sparklineData.nasdaq, sparklineData.dow]);
 
@@ -98,7 +98,11 @@ export default function FinanceDashboardPage() {
           {error ? (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center text-destructive">Failed to load market data. Please try again.</div>
           ) : (
-            <KPIGroup kpis={kpiData} columns={3} isLoading={isLoading} variant="default" />
+            <KPIGrid cards={isLoading ? [
+              { label: "Loading...", value: "-", isLoading: true },
+              { label: "Loading...", value: "-", isLoading: true },
+              { label: "Loading...", value: "-", isLoading: true },
+            ] : kpiData} />
           )}
         </section>
 

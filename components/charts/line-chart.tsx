@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { LineChart, Line, ResponsiveContainer, Area, AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, TooltipProps } from "recharts";
+import { LineChart as RechartsLineChart, Line, ResponsiveContainer, Area, AreaChart, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
 import { chartColors } from "@/lib/design-tokens";
 
@@ -51,7 +51,7 @@ export function LineChart({
     []
   );
 
-  const ChartComponent = showArea ? AreaChart : LineChart;
+  const ChartComponent = showArea ? AreaChart : RechartsLineChart;
 
   return (
     <div className={cn("w-full", className)} style={{ height }}>
@@ -253,7 +253,7 @@ export function MiniLineChart({
   );
 }
 
-function DefaultTooltip({ active, payload, label }: TooltipProps<number, string>) {
+function DefaultTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name?: string; value?: number | string }>; label?: string }) {
   if (!active || !payload || payload.length === 0) return null;
 
   return (
