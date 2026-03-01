@@ -1,4 +1,3 @@
-// @ts-nocheck — Social models (Follow, UserProfile, etc.) not yet in Prisma schema
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
@@ -6,6 +5,18 @@ export const dynamic = 'force-dynamic';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
+}
+
+interface FollowUserResult {
+  id: string;
+  userId: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  verificationTier: string;
+  isVerified: boolean;
+  followersCount: number;
+  ideasCount: number;
+  followedAt: Date;
 }
 
 /**
@@ -24,9 +35,24 @@ export async function GET(
   try {
     const { id: targetUserId } = await params;
     const searchParams = request.nextUrl.searchParams;
-    const type = searchParams.get('type') as 'followers' | 'following' || 'following';
+    const type = (searchParams.get('type') as 'followers' | 'following') || 'following';
     const cursor = searchParams.get('cursor') || undefined;
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
+    const currentUserId = request.headers.get('x-user-id');
+
+    // Check if current user is following this user
+    let isFollowing = false;
+    if (currentUserId && type === 'followers') {
+      const follow = await prisma.follow.findUnique({
+        where: {
+          followerId_followingId: {
+            followerId: currentUserId,
+            followingId: targetUserId,
+          },
+        },
+      });
+      isFollowing = !!follow;
+    }
 
     // Find follows based on type
     const where = type === 'followers'
@@ -51,7 +77,7 @@ export async function GET(
             followersCount: true,
             ideasCount: true,
           },
-        } : false,
+        } : undefined,
         following: type === 'following' ? {
           select: {
             id: true,
@@ -63,7 +89,7 @@ export async function GET(
             followersCount: true,
             ideasCount: true,
           },
-        } : false,
+        } : undefined,
       },
     });
 
@@ -71,19 +97,25 @@ export async function GET(
     const followsToReturn = hasMore ? follows.slice(0, -1) : follows;
 
     // Format response based on type
-    const users = followsToReturn.map(follow => {
-      if (type === 'followers') {
+    const users: FollowUserResult[] = followsToReturn
+      .filter(follow => {
+        const user = type === 'followers' ? follow.follower : follow.following;
+        return user !== null;
+      })
+      .map(follow => {
+        const user = type === 'followers' ? follow.follower : follow.following;
         return {
-          ...follow.follower,
+          id: user!.id,
+          userId: user!.userId,
+          displayName: user!.displayName,
+          avatarUrl: user!.avatarUrl,
+          verificationTier: user!.verificationTier,
+          isVerified: user!.isVerified,
+          followersCount: user!.followersCount,
+          ideasCount: user!.ideasCount,
           followedAt: follow.createdAt,
         };
-      } else {
-        return {
-          ...follow.following,
-          followedAt: follow.createdAt,
-        };
-      }
-    });
+      });
 
     // Get counts
     const followersCount = await prisma.follow.count({
@@ -97,11 +129,12 @@ export async function GET(
     return NextResponse.json({
       success: true,
       data: {
-        users: users.filter(u => u !== null && u !== false),
+        users,
         nextCursor: hasMore ? followsToReturn[followsToReturn.length - 1]?.id || null : null,
         hasMore,
         followersCount,
         followingCount,
+        isFollowing,
       },
     });
   } catch (error) {
@@ -202,7 +235,7 @@ export async function POST(
     ]);
 
     // Create notification for the followed user
-    await prisma.notification.create({
+    await prisma.socialNotification.create({
       data: {
         userId: targetUserId,
         type: 'NEW_FOLLOWER',

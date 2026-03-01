@@ -1,4 +1,3 @@
-// @ts-nocheck — Social models not yet in Prisma schema
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
@@ -70,7 +69,7 @@ export async function POST(
     // Verify idea exists
     const idea = await prisma.tradeIdea.findUnique({
       where: { id: ideaId },
-      select: { id: true, authorId: true },
+      select: { id: true, authorId: true, likeCount: true },
     });
 
     if (!idea) {
@@ -121,10 +120,10 @@ export async function POST(
 
     // Create notification for idea author (if not self)
     if (idea.authorId !== currentUserId) {
-      await prisma.notification.create({
+      await prisma.socialNotification.create({
         data: {
           userId: idea.authorId,
-          type: 'NEW_IDEA',
+          type: 'IDEA_LIKED',
           title: 'New Like',
           body: `${userProfile.displayName || 'Someone'} liked your idea`,
           data: { ideaId },
@@ -134,7 +133,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      data: { liked: true },
+      data: { liked: true, likeCount: idea.likeCount + 1 },
     });
   } catch (error) {
     console.error('Like creation error:', error);
@@ -162,6 +161,19 @@ export async function DELETE(
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    // Get current like count
+    const idea = await prisma.tradeIdea.findUnique({
+      where: { id: ideaId },
+      select: { likeCount: true },
+    });
+
+    if (!idea) {
+      return NextResponse.json(
+        { success: false, error: 'Idea not found' },
+        { status: 404 }
       );
     }
 
@@ -194,7 +206,7 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      data: { liked: false },
+      data: { liked: false, likeCount: Math.max(0, idea.likeCount - 1) },
     });
   } catch (error) {
     console.error('Unlike error:', error);

@@ -1,7 +1,6 @@
-// @ts-nocheck — Social models (UserProfile) not yet in Prisma schema
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import type { UpdateProfileRequest, UserProfile } from '@/lib/types/social';
+import type { UpdateProfileBody, UserProfile } from '@/lib/types/social';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,11 +8,54 @@ export const dynamic = 'force-dynamic';
  * GET /api/social/profile
  * 
  * Get the current user's profile
+ * Headers: x-user-id (required)
+ * Query: userId (optional - get another user's profile)
  */
 export async function GET(request: NextRequest) {
   try {
     const currentUserId = request.headers.get('x-user-id');
+    const requestedUserId = request.nextUrl.searchParams.get('userId');
 
+    // If requesting another user's profile
+    if (requestedUserId) {
+      const profile = await prisma.userProfile.findUnique({
+        where: { userId: requestedUserId },
+        select: {
+          id: true,
+          userId: true,
+          displayName: true,
+          bio: true,
+          avatarUrl: true,
+          website: true,
+          location: true,
+          isVerified: true,
+          verificationTier: true,
+          followersCount: true,
+          followingCount: true,
+          ideasCount: true,
+          winRate: true,
+          avgReturn: true,
+          brokerageConnected: true,
+          brokerageName: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!profile) {
+        return NextResponse.json(
+          { success: false, error: 'Profile not found' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: profile,
+      });
+    }
+
+    // Get current user's profile
     if (!currentUserId) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -66,7 +108,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body: UpdateProfileRequest = await request.json();
+    const body: UpdateProfileBody = await request.json();
 
     // Validate display name
     if (body.displayName !== undefined && body.displayName !== null) {
@@ -89,7 +131,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Validate website URL
-    if (body.website !== undefined && body.website !== null) {
+    if (body.website !== undefined && body.website !== null && body.website !== '') {
       try {
         new URL(body.website);
       } catch {
@@ -117,6 +159,7 @@ export async function PUT(request: NextRequest) {
     if (body.bio !== undefined) updateData.bio = body.bio;
     if (body.avatarUrl !== undefined) updateData.avatarUrl = body.avatarUrl;
     if (body.website !== undefined) updateData.website = body.website;
+    if (body.location !== undefined) updateData.location = body.location;
 
     // Update profile
     const updatedProfile = await prisma.userProfile.update({

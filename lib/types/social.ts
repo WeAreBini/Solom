@@ -1,22 +1,49 @@
 /**
- * Social Trading Types
- * 
- * Type definitions for the Social Trading feature (Issue #44)
+ * TypeScript types for Social Trading feature
+ * These types correspond to Prisma models in schema.prisma
  */
 
 // ============================================
-// User Profile Types
+// Enums
 // ============================================
 
 export type VerificationTier = 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
 
+export type Timeframe = 'INTRADAY' | 'SWING' | 'POSITION';
+
+export type TradeDirection = 'LONG' | 'SHORT' | 'NEUTRAL';
+
+export type IdeaStatus = 'ACTIVE' | 'CLOSED' | 'INVALIDATED';
+
+export type Visibility = 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
+
+export type SocialNotificationType =
+  | 'NEW_IDEA'
+  | 'NEW_FOLLOWER'
+  | 'COMMENT_REPLY'
+  | 'IDEA_LIKED'
+  | 'IDEA_CLOSED'
+  | 'MENTION'
+  | 'PERFORMANCE_MILESTONE'
+  | 'COPY_STARTED'
+  | 'COPY_STOPPED';
+
+export type CopyStatus = 'ACTIVE' | 'PAUSED' | 'STOPPED';
+
+// ============================================
+// Core Models
+// ============================================
+
 export interface UserProfile {
   id: string;
   userId: string;
+  createdAt: Date;
+  updatedAt: Date;
   displayName: string | null;
   bio: string | null;
   avatarUrl: string | null;
   website: string | null;
+  location: string | null;
   isVerified: boolean;
   verificationTier: VerificationTier;
   followersCount: number;
@@ -26,21 +53,7 @@ export interface UserProfile {
   avgReturn: number | null;
   brokerageConnected: boolean;
   brokerageName: string | null;
-  createdAt: Date;
-  updatedAt: Date;
 }
-
-export interface UserProfileStats {
-  followersCount: number;
-  followingCount: number;
-  ideasCount: number;
-  winRate: number | null;
-  avgReturn: number | null;
-}
-
-// ============================================
-// Follow Types
-// ============================================
 
 export interface Follow {
   id: string;
@@ -48,20 +61,6 @@ export interface Follow {
   followingId: string;
   createdAt: Date;
 }
-
-export interface FollowWithProfile extends Follow {
-  follower?: UserProfile;
-  following?: UserProfile;
-}
-
-// ============================================
-// Trade Idea Types
-// ============================================
-
-export type Timeframe = 'INTRADAY' | 'SWING' | 'POSITION';
-export type TradeDirection = 'LONG' | 'SHORT' | 'NEUTRAL';
-export type IdeaStatus = 'ACTIVE' | 'CLOSED' | 'INVALIDATED';
-export type Visibility = 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
 
 export interface ChartAttachment {
   url: string;
@@ -72,8 +71,10 @@ export interface ChartAttachment {
 export interface TradeIdea {
   id: string;
   authorId: string;
-  content: string;
+  createdAt: Date;
+  updatedAt: Date;
   title: string | null;
+  content: string;
   tickers: string[];
   entryPrice: number | null;
   targetPrice: number | null;
@@ -81,18 +82,16 @@ export interface TradeIdea {
   positionSize: number | null;
   timeframe: Timeframe | null;
   direction: TradeDirection | null;
+  thesis: string | null;
   status: IdeaStatus;
   closedAt: Date | null;
   closeReason: string | null;
-  charts: ChartAttachment[] | null;
-  thesis: string | null;
   visibility: Visibility;
+  charts: ChartAttachment[] | null;
   viewCount: number;
   likeCount: number;
   commentCount: number;
   bookmarkCount: number;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface TradeIdeaWithAuthor extends TradeIdea {
@@ -103,10 +102,6 @@ export interface TradeIdeaWithMetrics extends TradeIdeaWithAuthor {
   isLiked: boolean;
   isBookmarked: boolean;
 }
-
-// ============================================
-// Interaction Types
-// ============================================
 
 export interface Like {
   id: string;
@@ -120,64 +115,60 @@ export interface Comment {
   ideaId: string;
   authorId: string;
   parentId: string | null;
-  content: string;
   createdAt: Date;
   updatedAt: Date;
+  content: string;
+  author?: UserProfile;
+  replies?: Comment[];
 }
 
-export interface CommentWithAuthor extends Comment {
-  author: UserProfile;
-  replies?: CommentWithAuthor[];
-}
-
-// ============================================
-// Notification Types
-// ============================================
-
-export type NotificationType =
-  | 'NEW_IDEA'
-  | 'NEW_FOLLOWER'
-  | 'COMMENT_REPLY'
-  | 'IDEA_CLOSED'
-  | 'PERFORMANCE_MILESTONE'
-  | 'PRICE_ALERT'
-  | 'VERIFICATION_APPROVED'
-  | 'COPY_STARTED'
-  | 'COPY_STOPPED';
-
-export interface NotificationData {
-  ideaId?: string;
-  followerId?: string;
-  commentId?: string;
-  milestone?: string;
-  price?: number;
-  symbol?: string;
-}
-
-export interface Notification {
+export interface Bookmark {
   id: string;
   userId: string;
-  type: NotificationType;
-  title: string;
-  body: string | null;
-  data: NotificationData | null;
-  read: boolean;
-  readAt: Date | null;
+  ideaId: string;
   createdAt: Date;
 }
 
+export interface SocialNotification {
+  id: string;
+  userId: string;
+  type: SocialNotificationType;
+  createdAt: Date;
+  title: string;
+  body: string | null;
+  data: Record<string, unknown> | null;
+  read: boolean;
+  readAt: Date | null;
+}
+
+export interface CopyRelationship {
+  id: string;
+  followerId: string;
+  traderId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  allocatedAmount: number;
+  maxLossPercent: number;
+  copyOpenPositions: boolean;
+  status: CopyStatus;
+  pnl: number;
+  stoppedAt: Date | null;
+  excludeAssets: string[];
+  maxSizePerTrade: number | null;
+}
+
 // ============================================
-// Feed Types
+// API Request/Response Types
 // ============================================
 
-export type FeedType = 'following' | 'foryou' | 'trending';
+// Feed
+export type FeedType = 'trending' | 'following' | 'foryou';
 
 export interface FeedQuery {
-  type: FeedType;
+  type?: FeedType;
   cursor?: string;
   limit?: number;
   ticker?: string;
-  authorId?: string;
 }
 
 export interface FeedResponse {
@@ -186,13 +177,24 @@ export interface FeedResponse {
   hasMore: boolean;
 }
 
-// ============================================
-// API Request/Response Types
-// ============================================
+// Profile
+export interface CreateProfileBody {
+  displayName?: string;
+  bio?: string;
+  avatarUrl?: string;
+  website?: string;
+  location?: string;
+}
 
-export interface CreateIdeaRequest {
-  content: string;
+export interface UpdateProfileBody extends Partial<CreateProfileBody> {
+  isVerified?: boolean;
+  verificationTier?: VerificationTier;
+}
+
+// Trade Ideas
+export interface CreateIdeaBody {
   title?: string;
+  content: string;
   tickers: string[];
   entryPrice?: number;
   targetPrice?: number;
@@ -200,78 +202,55 @@ export interface CreateIdeaRequest {
   positionSize?: number;
   timeframe?: Timeframe;
   direction?: TradeDirection;
-  charts?: ChartAttachment[];
   thesis?: string;
   visibility?: Visibility;
+  charts?: ChartAttachment[];
 }
 
-export interface UpdateIdeaRequest {
-  content?: string;
-  title?: string;
-  tickers?: string[];
-  entryPrice?: number;
-  targetPrice?: number;
-  stopLoss?: number;
-  positionSize?: number;
-  timeframe?: Timeframe;
-  direction?: TradeDirection;
-  thesis?: string;
-  visibility?: Visibility;
+export interface UpdateIdeaBody extends Partial<CreateIdeaBody> {
   status?: IdeaStatus;
   closeReason?: string;
 }
 
-export interface CreateCommentRequest {
-  ideaId: string;
+// Comments
+export interface CreateCommentBody {
   content: string;
   parentId?: string;
 }
 
-export interface UpdateProfileRequest {
-  displayName?: string;
-  bio?: string;
-  avatarUrl?: string;
-  website?: string;
+// Notifications
+export interface NotificationsQuery {
+  unreadOnly?: boolean;
+  cursor?: string;
+  limit?: number;
 }
 
-// ============================================
-// Copy Trading Types (Phase 3)
-// ============================================
-
-export type CopyStatus = 'ACTIVE' | 'PAUSED' | 'STOPPED';
-
-export interface CopyRelationship {
-  id: string;
-  followerId: string;
-  traderId: string;
-  allocatedAmount: number;
-  maxLossPercent: number;
-  copyOpenPositions: boolean;
-  status: CopyStatus;
-  pnl: number;
-  startedAt: Date;
-  stoppedAt: Date | null;
-}
-
-export interface StartCopyRequest {
-  traderId: string;
-  allocatedAmount: number;
-  maxLossPercent?: number;
-  copyOpenPositions?: boolean;
-}
-
-// ============================================
-// Helper Types
-// ============================================
-
-export interface PaginatedResponse<T> {
-  data: T[];
+export interface NotificationsResponse {
+  notifications: SocialNotification[];
   nextCursor: string | null;
   hasMore: boolean;
+  unreadCount: number;
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
+// Follow
+export interface FollowResponse {
+  isFollowing: boolean;
+  followersCount: number;
 }
+
+// ============================================
+// React Query Keys
+// ============================================
+
+export const socialKeys = {
+  all: ['social'] as const,
+  feed: (type: FeedType, ticker?: string) => [...socialKeys.all, 'feed', type, ticker] as const,
+  idea: (id: string) => [...socialKeys.all, 'idea', id] as const,
+  ideas: (userId: string) => [...socialKeys.all, 'ideas', userId] as const,
+  profile: (userId: string) => [...socialKeys.all, 'profile', userId] as const,
+  myProfile: () => [...socialKeys.all, 'myProfile'] as const,
+  followers: (userId: string) => [...socialKeys.all, 'followers', userId] as const,
+  following: (userId: string) => [...socialKeys.all, 'following', userId] as const,
+  notifications: () => [...socialKeys.all, 'notifications'] as const,
+  bookmarks: () => [...socialKeys.all, 'bookmarks'] as const,
+};
