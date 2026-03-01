@@ -213,3 +213,281 @@ model AlertNotification {
   @@index([createdAt])
   @@map("alert_notifications")
 }
+
+// ============================================
+// Social Trading Models (Phase 1)
+// ============================================
+
+// User profile with social stats and verification
+model UserProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Profile Data
+  displayName String?  @map("display_name")
+  bio         String?  @db.Text
+  avatarUrl   String?  @map("avatar_url")
+  website     String?
+  location    String?
+
+  // Verification & Tier
+  isVerified       Boolean            @default(false) @map("is_verified")
+  verificationTier VerificationTier   @default(BRONZE) @map("verification_tier")
+
+  // Cached Statistics (updated via triggers/jobs)
+  followersCount Int @default(0) @map("followers_count")
+  followingCount Int @default(0) @map("following_count")
+  ideasCount     Int @default(0) @map("ideas_count")
+
+  // Performance Metrics (for future phases)
+  winRate   Float? @map("win_rate")
+  avgReturn Float? @map("avg_return")
+
+  // Brokerage Connection (Phase 3 - copy trading)
+  brokerageConnected Boolean @default(false) @map("brokerage_connected")
+  brokerageName      String? @map("brokerage_name")
+
+  // Relations
+  followers      Follow[]        @relation("UserFollowers")
+  following      Follow[]        @relation("UserFollowing")
+  ideas          TradeIdea[]     @relation("UserProfileIdeas")
+  likes          Like[]          @relation("UserLikes")
+  comments       Comment[]       @relation("UserComments")
+  notifications  SocialNotification[] @relation("UserNotifications")
+  copyFollowers  CopyRelationship[] @relation("CopyTrader")
+  copyTrading    CopyRelationship[] @relation("CopyFollower")
+  bookmarks      Bookmark[]      @relation("UserBookmarks")
+
+  @@index([userId])
+  @@map("user_profiles")
+}
+
+enum VerificationTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+// Following relationship
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String   @map("follower_id")
+  followingId String   @map("following_id")
+  createdAt   DateTime @default(now())
+
+  follower  UserProfile @relation("UserFollowers", fields: [followerId], references: [userId], onDelete: Cascade)
+  following UserProfile @relation("UserFollowing", fields: [followingId], references: [userId], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+// Trade ideas/posts
+model TradeIdea {
+  id        String   @id @default(cuid())
+  authorId  String   @map("author_id")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Content
+  title   String?
+  content String  @db.Text
+
+  // Trade Details
+  tickers     String[] // Array of stock symbols
+  entryPrice  Float?   @map("entry_price")
+  targetPrice Float?   @map("target_price")
+  stopLoss    Float?   @map("stop_loss")
+  positionSize Float?  @map("position_size")
+  timeframe   Timeframe?
+  direction   TradeDirection?
+  thesis      String?  @db.Text
+
+  // Status
+  status      IdeaStatus @default(ACTIVE)
+  closedAt    DateTime?  @map("closed_at")
+  closeReason String?    @map("close_reason")
+
+  // Visibility
+  visibility Visibility @default(PUBLIC)
+
+  // Attachments (charts, images)
+  charts Json? // Array of {url, caption, type}
+
+  // Cached Metrics
+  viewCount     Int @default(0) @map("view_count")
+  likeCount     Int @default(0) @map("like_count")
+  commentCount  Int @default(0) @map("comment_count")
+  bookmarkCount Int @default(0) @map("bookmark_count")
+
+  // Relations
+  author    UserProfile  @relation("UserProfileIdeas", fields: [authorId], references: [userId], onDelete: Cascade)
+  likes     Like[]       @relation("IdeaLikes")
+  comments  Comment[]    @relation("IdeaComments")
+  bookmarks Bookmark[]   @relation("IdeaBookmarks")
+
+  @@index([authorId])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([tickers])
+  @@map("trade_ideas")
+}
+
+enum Timeframe {
+  INTRADAY
+  SWING
+  POSITION
+}
+
+enum TradeDirection {
+  LONG
+  SHORT
+  NEUTRAL
+}
+
+enum IdeaStatus {
+  ACTIVE
+  CLOSED
+  INVALIDATED
+}
+
+enum Visibility {
+  PUBLIC
+  FOLLOWERS
+  PRIVATE
+}
+
+// Likes on trade ideas
+model Like {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  ideaId    String   @map("idea_id")
+  createdAt DateTime @default(now())
+
+  user UserProfile @relation("UserLikes", fields: [userId], references: [userId], onDelete: Cascade)
+  idea TradeIdea   @relation("IdeaLikes", fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, ideaId])
+  @@index([userId])
+  @@index([ideaId])
+  @@map("likes")
+}
+
+// Comments on trade ideas
+model Comment {
+  id        String   @id @default(cuid())
+  ideaId    String   @map("idea_id")
+  authorId  String   @map("author_id")
+  parentId  String?  @map("parent_id")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  content String @db.Text
+
+  idea    TradeIdea  @relation("IdeaComments", fields: [ideaId], references: [id], onDelete: Cascade)
+  author  UserProfile @relation("UserComments", fields: [authorId], references: [userId], onDelete: Cascade)
+  parent  Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[]  @relation("CommentReplies")
+
+  @@index([ideaId])
+  @@index([authorId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+// Bookmarks for saving ideas
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  ideaId    String   @map("idea_id")
+  createdAt DateTime @default(now())
+
+  user UserProfile @relation("UserBookmarks", fields: [userId], references: [userId], onDelete: Cascade)
+  idea TradeIdea   @relation("IdeaBookmarks", fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, ideaId])
+  @@index([userId])
+  @@index([ideaId])
+  @@map("bookmarks")
+}
+
+// Social notifications
+model SocialNotification {
+  id        String             @id @default(cuid())
+  userId    String             @map("user_id")
+  type      SocialNotificationType
+  createdAt DateTime           @default(now())
+
+  // Notification content
+  title String
+  body  String? @db.Text
+
+  // Additional context (JSON for flexibility)
+  data Json?
+
+  // Read status
+  read     Boolean   @default(false)
+  readAt   DateTime? @map("read_at")
+
+  // Relation
+  user UserProfile @relation("UserNotifications", fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("social_notifications")
+}
+
+enum SocialNotificationType {
+  NEW_IDEA         // Someone you follow posted an idea
+  NEW_FOLLOWER     // Someone started following you
+  COMMENT_REPLY    // Someone replied to your comment
+  IDEA_LIKED       // Someone liked your idea
+  IDEA_CLOSED      // An idea you bookmarked was closed
+  MENTION          // You were mentioned in a post/comment
+  PERFORMANCE_MILESTONE // Achievement unlocked
+  COPY_STARTED     // Someone started copying you (Phase 3)
+  COPY_STOPPED     // Someone stopped copying you (Phase 3)
+}
+
+// Copy trading relationship (Phase 3)
+model CopyRelationship {
+  id        String     @id @default(cuid())
+  followerId String   @map("follower_id")
+  traderId  String     @map("trader_id")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Copy settings
+  allocatedAmount    Float     @map("allocated_amount")
+  maxLossPercent     Float     @default(20.0) @map("max_loss_percent")
+  copyOpenPositions  Boolean   @default(false) @map("copy_open_positions")
+  status             CopyStatus @default(ACTIVE)
+
+  // Performance tracking
+  pnl      Float   @default(0)
+  stoppedAt DateTime? @map("stopped_at")
+
+  // Exclusions/settings
+  excludeAssets String[] @map("exclude_assets") // Symbols to exclude
+  maxSizePerTrade Float? @map("max_size_per_trade")
+
+  // Relations
+  follower UserProfile @relation("CopyFollower", fields: [followerId], references: [userId], onDelete: Cascade)
+  trader   UserProfile @relation("CopyTrader", fields: [traderId], references: [userId], onDelete: Cascade)
+
+  @@unique([followerId, traderId])
+  @@index([followerId])
+  @@index([traderId])
+  @@index([status])
+  @@map("copy_relationships")
+}
+
+enum CopyStatus {
+  ACTIVE
+  PAUSED
+  STOPPED
+}

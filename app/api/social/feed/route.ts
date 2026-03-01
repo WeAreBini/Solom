@@ -1,7 +1,6 @@
-// @ts-nocheck — Social models (TradeIdea, UserProfile, etc.) not yet in Prisma schema
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import type { FeedResponse, FeedType, TradeIdeaWithMetrics } from '@/lib/types/social';
+import type { FeedResponse, FeedType } from '@/lib/types/social';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +28,26 @@ export async function GET(request: NextRequest) {
       visibility: 'PUBLIC',
       status: 'ACTIVE',
     };
+
+    // If 'following' type, get ideas from followed users
+    if (type === 'following' && currentUserId) {
+      // Get list of users the current user follows
+      const follows = await prisma.follow.findMany({
+        where: { followerId: currentUserId },
+        select: { followingId: true },
+      });
+      
+      const followingIds = follows.map(f => f.followingId);
+      
+      // Include current user's ideas as well
+      if (currentUserId) {
+        followingIds.push(currentUserId);
+      }
+      
+      where.authorId = { in: followingIds };
+      // Remove public visibility constraint for following feed
+      delete where.visibility;
+    }
 
     // Filter by ticker if provided
     if (ticker) {
@@ -64,6 +83,7 @@ export async function GET(request: NextRequest) {
             brokerageName: true,
             createdAt: true,
             updatedAt: true,
+            location: true,
           },
         },
       },
@@ -72,44 +92,46 @@ export async function GET(request: NextRequest) {
     const hasMore = ideas.length > limit;
     const ideasToReturn = hasMore ? ideas.slice(0, -1) : ideas;
 
-    // Get like status for current user
+    // Get like and bookmark status for current user
     let likedIdeaIds: string[] = [];
-    if (currentUserId) {
-      const likes = await prisma.like.findMany({
-        where: {
-          userId: currentUserId,
-          ideaId: { in: ideasToReturn.map(i => i.id) },
-        },
-        select: { ideaId: true },
-      });
+    let bookmarkedIdeaIds: string[] = [];
+
+    if (currentUserId && ideasToReturn.length > 0) {
+      const [likes, bookmarks] = await Promise.all([
+        prisma.like.findMany({
+          where: {
+            userId: currentUserId,
+            ideaId: { in: ideasToReturn.map(i => i.id) },
+          },
+          select: { ideaId: true },
+        }),
+        prisma.bookmark.findMany({
+          where: {
+            userId: currentUserId,
+            ideaId: { in: ideasToReturn.map(i => i.id) },
+          },
+          select: { ideaId: true },
+        }),
+      ]);
       likedIdeaIds = likes.map(l => l.ideaId);
+      bookmarkedIdeaIds = bookmarks.map(b => b.ideaId);
     }
 
     // Format response
-    const formattedIdeas: TradeIdeaWithMetrics[] = ideasToReturn.map(idea => ({
+    const formattedIdeas = ideasToReturn.map(idea => ({
       ...idea,
       charts: idea.charts as unknown as import('@/lib/types/social').ChartAttachment[] | null,
       author: {
-        id: idea.author.id,
-        userId: idea.author.userId,
-        displayName: idea.author.displayName,
-        avatarUrl: idea.author.avatarUrl,
-        verificationTier: idea.author.verificationTier,
-        isVerified: idea.author.isVerified,
-        followersCount: idea.author.followersCount,
-        followingCount: idea.author.followingCount ?? 0,
-        ideasCount: idea.author.ideasCount,
+        ...idea.author,
         bio: idea.author.bio ?? null,
         website: idea.author.website ?? null,
+        location: idea.author.location ?? null,
         winRate: idea.author.winRate ?? null,
         avgReturn: idea.author.avgReturn ?? null,
-        brokerageConnected: idea.author.brokerageConnected ?? false,
         brokerageName: idea.author.brokerageName ?? null,
-        createdAt: idea.author.createdAt,
-        updatedAt: idea.author.updatedAt,
       },
       isLiked: likedIdeaIds.includes(idea.id),
-      isBookmarked: false, // TODO: Implement bookmarks
+      isBookmarked: bookmarkedIdeaIds.includes(idea.id),
     }));
 
     const response: FeedResponse = {

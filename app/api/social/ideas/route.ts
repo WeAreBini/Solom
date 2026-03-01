@@ -1,7 +1,6 @@
-// @ts-nocheck — Social models (TradeIdea, etc.) not yet in Prisma schema
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import type { CreateIdeaRequest, TradeIdea } from '@/lib/types/social';
+import type { CreateIdeaBody } from '@/lib/types/social';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,12 +21,19 @@ export async function GET(request: NextRequest) {
     const ticker = searchParams.get('ticker')?.toUpperCase();
     const cursor = searchParams.get('cursor') || undefined;
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
+    const currentUserId = request.headers.get('x-user-id');
 
     // Build where clause
     const where: Record<string, unknown> = {
-      visibility: 'PUBLIC',
       status: 'ACTIVE',
     };
+
+    // If not viewing own ideas, only show public
+    if (authorId && authorId !== currentUserId) {
+      where.visibility = 'PUBLIC';
+    } else if (!authorId) {
+      where.visibility = 'PUBLIC';
+    }
 
     if (authorId) {
       where.authorId = authorId;
@@ -53,9 +59,16 @@ export async function GET(request: NextRequest) {
             verificationTier: true,
             isVerified: true,
             followersCount: true,
+            followingCount: true,
             ideasCount: true,
+            bio: true,
+            website: true,
             winRate: true,
             avgReturn: true,
+            brokerageConnected: true,
+            brokerageName: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
       },
@@ -64,10 +77,43 @@ export async function GET(request: NextRequest) {
     const hasMore = ideas.length > limit;
     const ideasToReturn = hasMore ? ideas.slice(0, -1) : ideas;
 
+    // Get like and bookmark status for current user
+    let likedIdeaIds: string[] = [];
+    let bookmarkedIdeaIds: string[] = [];
+
+    if (currentUserId && ideasToReturn.length > 0) {
+      const [likes, bookmarks] = await Promise.all([
+        prisma.like.findMany({
+          where: {
+            userId: currentUserId,
+            ideaId: { in: ideasToReturn.map(i => i.id) },
+          },
+          select: { ideaId: true },
+        }),
+        prisma.bookmark.findMany({
+          where: {
+            userId: currentUserId,
+            ideaId: { in: ideasToReturn.map(i => i.id) },
+          },
+          select: { ideaId: true },
+        }),
+      ]);
+      likedIdeaIds = likes.map(l => l.ideaId);
+      bookmarkedIdeaIds = bookmarks.map(b => b.ideaId);
+    }
+
+    // Format response
+    const formattedIdeas = ideasToReturn.map(idea => ({
+      ...idea,
+      charts: idea.charts as unknown as import('@/lib/types/social').ChartAttachment[] | null,
+      isLiked: likedIdeaIds.includes(idea.id),
+      isBookmarked: bookmarkedIdeaIds.includes(idea.id),
+    }));
+
     return NextResponse.json({
       success: true,
       data: {
-        ideas: ideasToReturn,
+        ideas: formattedIdeas,
         nextCursor: hasMore ? ideasToReturn[ideasToReturn.length - 1]?.id || null : null,
         hasMore,
       },
@@ -97,7 +143,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body: CreateIdeaRequest = await request.json();
+    const body: CreateIdeaBody = await request.json();
 
     // Validate required fields
     if (!body.content || body.content.trim().length === 0) {
@@ -137,15 +183,30 @@ export async function POST(request: NextRequest) {
         content: body.content.trim(),
         title: body.title?.trim() || null,
         tickers: validatedTickers,
-        entryPrice: body.entryPrice || null,
-        targetPrice: body.targetPrice || null,
-        stopLoss: body.stopLoss || null,
-        positionSize: body.positionSize || null,
-        timeframe: body.timeframe || null,
-        direction: body.direction || null,
-        charts: body.charts as unknown as undefined,
+        entryPrice: body.entryPrice ?? null,
+        targetPrice: body.targetPrice ?? null,
+        stopLoss: body.stopLoss ?? null,
+        positionSize: body.positionSize ?? null,
+        timeframe: body.timeframe ?? null,
+        direction: body.direction ?? null,
+        charts: body.charts as unknown as object[] ?? null,
         thesis: body.thesis?.trim() || null,
         visibility: body.visibility || 'PUBLIC',
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            userId: true,
+            displayName: true,
+            avatarUrl: true,
+            verificationTier: true,
+            isVerified: true,
+            followersCount: true,
+            followingCount: true,
+            ideasCount: true,
+          },
+        },
       },
     });
 
@@ -162,7 +223,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (followers.length > 0) {
-      await prisma.notification.createMany({
+      await prisma.socialNotification.createMany({
         data: followers.map(f => ({
           userId: f.followerId,
           type: 'NEW_IDEA',
@@ -175,7 +236,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: idea,
+      data: {
+        ...idea,
+        charts: idea.charts as unknown as import('@/lib/types/social').ChartAttachment[] | null,
+        isLiked: false,
+        isBookmarked: false,
+      },
     }, { status: 201 });
   } catch (error) {
     console.error('Idea creation error:', error);

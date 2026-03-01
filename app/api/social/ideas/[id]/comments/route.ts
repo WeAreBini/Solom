@@ -1,12 +1,16 @@
-// @ts-nocheck — Social models not yet in Prisma schema
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import type { CreateCommentRequest, CommentWithAuthor } from '@/lib/types/social';
+import type { CreateCommentBody, Comment, UserProfile } from '@/lib/types/social';
 
 export const dynamic = 'force-dynamic';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
+}
+
+interface CommentWithAuthor extends Comment {
+  author: UserProfile;
+  replies: CommentWithAuthor[];
 }
 
 /**
@@ -56,6 +60,18 @@ export async function GET(
             avatarUrl: true,
             verificationTier: true,
             isVerified: true,
+            followersCount: true,
+            ideasCount: true,
+            winRate: true,
+            avgReturn: true,
+            brokerageConnected: true,
+            brokerageName: true,
+            createdAt: true,
+            updatedAt: true,
+            bio: true,
+            website: true,
+            location: true,
+            followingCount: true,
           },
         },
       },
@@ -73,20 +89,13 @@ export async function GET(
       const commentWithAuthor: CommentWithAuthor = {
         ...comment,
         author: {
-          id: comment.author.id,
-          userId: comment.author.userId,
-          displayName: comment.author.displayName,
-          avatarUrl: comment.author.avatarUrl,
-          verificationTier: comment.author.verificationTier,
-          isVerified: comment.author.isVerified,
-          followersCount: 0,
-          ideasCount: 0,
-          winRate: null,
-          avgReturn: null,
-          brokerageConnected: false,
-          brokerageName: null,
-          createdAt: comment.author.createdAt || new Date(),
-          updatedAt: comment.author.updatedAt || new Date(),
+          ...comment.author,
+          bio: comment.author.bio ?? null,
+          website: comment.author.website ?? null,
+          location: comment.author.location ?? null,
+          winRate: comment.author.winRate ?? null,
+          avgReturn: comment.author.avgReturn ?? null,
+          brokerageName: comment.author.brokerageName ?? null,
         },
         replies: [],
       };
@@ -144,7 +153,7 @@ export async function POST(
       );
     }
 
-    const body: CreateCommentRequest = await request.json();
+    const body: CreateCommentBody = await request.json();
 
     // Validate content
     if (!body.content || body.content.trim().length === 0) {
@@ -217,6 +226,18 @@ export async function POST(
             avatarUrl: true,
             verificationTier: true,
             isVerified: true,
+            followersCount: true,
+            ideasCount: true,
+            winRate: true,
+            avgReturn: true,
+            brokerageConnected: true,
+            brokerageName: true,
+            createdAt: true,
+            updatedAt: true,
+            bio: true,
+            website: true,
+            location: true,
+            followingCount: true,
           },
         },
       },
@@ -230,7 +251,7 @@ export async function POST(
 
     // Create notification for idea author (if not self)
     if (idea.authorId !== currentUserId) {
-      await prisma.notification.create({
+      await prisma.socialNotification.create({
         data: {
           userId: idea.authorId,
           type: 'COMMENT_REPLY',
@@ -251,7 +272,7 @@ export async function POST(
       if (parentComment && 
           parentComment.authorId !== currentUserId && 
           parentComment.authorId !== idea.authorId) {
-        await prisma.notification.create({
+        await prisma.socialNotification.create({
           data: {
             userId: parentComment.authorId,
             type: 'COMMENT_REPLY',
@@ -268,24 +289,17 @@ export async function POST(
       data: {
         ...comment,
         author: {
-          id: comment.author.id,
-          userId: comment.author.userId,
-          displayName: comment.author.displayName,
-          avatarUrl: comment.author.avatarUrl,
-          verificationTier: comment.author.verificationTier,
-          isVerified: comment.author.isVerified,
-          followersCount: 0,
-          ideasCount: 0,
-          winRate: null,
-          avgReturn: null,
-          brokerageConnected: false,
-          brokerageName: null,
-          createdAt: comment.author.createdAt || new Date(),
-          updatedAt: comment.author.updatedAt || new Date(),
+          ...comment.author,
+          bio: comment.author.bio ?? null,
+          website: comment.author.website ?? null,
+          location: comment.author.location ?? null,
+          winRate: comment.author.winRate ?? null,
+          avgReturn: comment.author.avgReturn ?? null,
+          brokerageName: comment.author.brokerageName ?? null,
         },
         replies: [],
       },
-    });
+    }, { status: 201 });
   } catch (error) {
     console.error('Comment creation error:', error);
     return NextResponse.json(
