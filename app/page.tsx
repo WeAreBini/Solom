@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,6 @@ import {
   Sparkles,
   ArrowRight,
   Github,
-  MessageSquare,
   Cpu,
   Layers,
   Shield,
@@ -91,17 +91,17 @@ export default function Home() {
                 Markets
               </a>
             </Button>
-            <Button variant="ghost" size="sm">
-              <Github className="mr-2 h-4 w-4" />
-              GitHub
+            <Button variant="ghost" size="sm" asChild>
+              <a href="https://github.com/WeAreBini/Solom" target="_blank" rel="noopener noreferrer">
+                <Github className="mr-2 h-4 w-4" />
+                GitHub
+              </a>
             </Button>
-            <Button variant="outline" size="sm">
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Discord
-            </Button>
-            <Button size="sm">
-              Get Started
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <Button size="sm" asChild>
+              <Link href="/dashboard">
+                Get Started
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
           </nav>
         </div>
@@ -124,12 +124,16 @@ export default function Home() {
           and System 2 Reasoning for deep analytical thinking. Build the next generation of AI applications.
         </p>
         <div className="mt-10 flex items-center justify-center gap-4">
-          <Button size="lg" className="gap-2">
-            Start Building
-            <ArrowRight className="h-4 w-4" />
+          <Button size="lg" className="gap-2" asChild>
+            <Link href="/dashboard">
+              Start Building
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </Button>
-          <Button size="lg" variant="outline">
-            View Demo
+          <Button size="lg" variant="outline" asChild>
+            <Link href="/dashboard/finance">
+              View Demo
+            </Link>
           </Button>
         </div>
       </section>
