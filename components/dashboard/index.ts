@@ -8,6 +8,9 @@ export { MarketMovers } from "./MarketMovers";
 export { Watchlist } from "./Watchlist";
 export { StockQuoteDetail } from "./StockQuoteDetail";
 
+// Price Alerts
+export { PriceAlerts, AlertNotifications } from "./PriceAlerts";
+
 // KPI Card Components
 export {
   KPICard,

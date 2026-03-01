@@ -165,3 +165,51 @@ model UserSettings {
 
   @@map("user_settings")
 }
+
+// Price alerts for watchlist stocks
+model PriceAlert {
+  id          String         @id @default(cuid())
+  userId      String
+  symbol      String
+  targetPrice Float
+  condition   AlertCondition @default(ABOVE)
+  status      AlertStatus    @default(ACTIVE)
+  triggeredAt DateTime?      @map("triggered_at")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([symbol])
+  @@index([status])
+  @@map("price_alerts")
+}
+
+enum AlertCondition {
+  ABOVE // Alert when price goes above target
+  BELOW // Alert when price goes below target
+}
+
+enum AlertStatus {
+  ACTIVE    // Alert is active and monitoring
+  TRIGGERED // Alert was triggered
+  DISABLED  // Alert is temporarily disabled
+  DELETED   // Alert was deleted
+}
+
+// Notification history for triggered alerts
+model AlertNotification {
+  id          String         @id @default(cuid())
+  userId      String
+  alertId     String         @map("alert_id")
+  symbol      String
+  targetPrice Float
+  actualPrice Float
+  condition   AlertCondition
+  createdAt   DateTime       @default(now()) @map("created_at")
+  read        Boolean        @default(false)
+
+  @@index([userId])
+  @@index([alertId])
+  @@index([createdAt])
+  @@map("alert_notifications")
+}
