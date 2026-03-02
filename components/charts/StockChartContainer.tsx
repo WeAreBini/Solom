@@ -2,17 +2,34 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { StockChart, IndicatorControls, DEFAULT_INDICATOR_SETTINGS } from '@/components/charts';
-import type { IndicatorSettings } from '@/components/charts';
+import type { IndicatorSettings, ChartType } from '@/components/charts';
 import type { HistoricalCandle, IndicatorData } from '@/components/charts';
 import { useHistoricalData } from '@/lib/api';
+import { useRealTimePrice } from '@/lib/hooks';
+import { Badge } from '@/components/ui/badge';
+import { Wifi, WifiOff } from 'lucide-react';
 
 export interface StockChartContainerProps {
   symbol: string;
   className?: string;
+  enableRealtime?: boolean;
+  showIndicatorControls?: boolean;
+  defaultChartType?: ChartType;
+  defaultPeriod?: '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '2Y' | '5Y';
+  height?: number;
 }
 
-export function StockChartContainer({ symbol, className }: StockChartContainerProps) {
-  const [period, setPeriod] = useState<'1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '2Y' | '5Y'>('1Y');
+export function StockChartContainer({
+  symbol,
+  className,
+  enableRealtime = true,
+  showIndicatorControls = true,
+  defaultChartType = 'candlestick',
+  defaultPeriod = '1Y',
+  height = 400,
+}: StockChartContainerProps) {
+  const [period, setPeriod] = useState<'1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '2Y' | '5Y'>(defaultPeriod);
+  const [chartType, setChartType] = useState<ChartType>(defaultChartType);
   const [indicatorSettings, setIndicatorSettings] = useState<IndicatorSettings>(DEFAULT_INDICATOR_SETTINGS);
 
   // Build indicator list for API request
@@ -34,11 +51,11 @@ export function StockChartContainer({ symbol, className }: StockChartContainerPr
   }, [indicatorSettings]);
 
   // Fetch historical data with indicators
-  const { 
-    data: chartData, 
-    isLoading, 
-    error, 
-    refetch 
+  const {
+    data: chartData,
+    isLoading,
+    error,
+    refetch,
   } = useHistoricalData(symbol, period, {
     indicators: activeIndicators,
     smaPeriod: indicatorSettings.sma.period,
@@ -49,10 +66,16 @@ export function StockChartContainer({ symbol, className }: StockChartContainerPr
     macdSignal: indicatorSettings.macd.signalPeriod,
   });
 
+  // Real-time price updates
+  const { price: realtimePrice, isWebSocket } = useRealTimePrice(symbol, {
+    enabled: enableRealtime,
+    pollingInterval: 10000,
+  });
+
   // Transform data for StockChart component
   const candlestickData = useMemo((): HistoricalCandle[] => {
     if (!chartData?.candlestick) return [];
-    return chartData.candlestick.map(c => ({
+    return chartData.candlestick.map((c: { date: string; open: number; high: number; low: number; close: number; volume: number }) => ({
       date: c.date,
       open: c.open,
       high: c.high,
@@ -89,10 +112,44 @@ export function StockChartContainer({ symbol, className }: StockChartContainerPr
     setPeriod(newPeriod as typeof period);
   }, []);
 
+  const handleChartTypeChange = useCallback((newType: ChartType) => {
+    setChartType(newType);
+  }, []);
+
   const errorMessage = error instanceof Error ? error.message : error ? 'Failed to load chart data' : null;
+
+  // Prepare real-time price data for the chart
+  const realtimePriceData = realtimePrice && enableRealtime
+    ? {
+        price: realtimePrice.price,
+        timestamp: realtimePrice.timestamp,
+      }
+    : null;
 
   return (
     <div className={className}>
+      {/* Connection status badge */}
+      {enableRealtime && (
+        <div className="mb-2 flex items-center justify-end">
+          <Badge
+            variant={isWebSocket ? 'success' : 'secondary'}
+            className="flex items-center gap-1 text-xs"
+          >
+            {isWebSocket ? (
+              <>
+                <Wifi className="h-3 w-3" />
+                Real-time
+              </>
+            ) : (
+              <>
+                <WifiOff className="h-3 w-3" />
+                Polling
+              </>
+            )}
+          </Badge>
+        </div>
+      )}
+
       <StockChart
         symbol={symbol}
         data={candlestickData}
@@ -107,14 +164,21 @@ export function StockChartContainer({ symbol, className }: StockChartContainerPr
         smaPeriod={indicatorSettings.sma.period}
         emaPeriod={indicatorSettings.ema.period}
         rsiPeriod={indicatorSettings.rsi.period}
+        chartType={chartType}
         onRefresh={handleRefresh}
         onPeriodChange={handlePeriodChange}
+        onChartTypeChange={handleChartTypeChange}
         selectedPeriod={period}
+        realtimePrice={realtimePriceData}
+        height={height}
       />
-      <IndicatorControls
-        settings={indicatorSettings}
-        onChange={setIndicatorSettings}
-      />
+
+      {showIndicatorControls && (
+        <IndicatorControls
+          settings={indicatorSettings}
+          onChange={setIndicatorSettings}
+        />
+      )}
     </div>
   );
 }
