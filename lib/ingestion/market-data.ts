@@ -52,9 +52,11 @@ export async function ingestAssetProfile(symbol: string) {
   }
 
   try {
-    const modules: string[] = ['summaryProfile', 'defaultKeyStatistics', 'summaryDetail', 'price'];
-    const result = await withRetry(() => yahooFinance.quoteSummary(symbol, { modules }));
-
+    const result = await withRetry(() =>
+  yahooFinance.quoteSummary(symbol, {
+    modules: ['summaryProfile', 'defaultKeyStatistics', 'summaryDetail', 'price'] as ['summaryProfile', 'defaultKeyStatistics', 'summaryDetail', 'price'],
+  })
+);
     if (!result || !(result as any).price) {
       throw new Error(`Could not fetch profile for ${symbol}`);
     }
