@@ -72,7 +72,14 @@ async function fetchApi<T>(endpoint: string): Promise<T> {
   if (!response.ok) {
     throw new Error(`API error: ${response.status}`);
   }
-  return response.json();
+  const json = await response.json();
+  if (json && typeof json === 'object' && 'success' in json) {
+    if (!json.success) {
+      throw new Error(json.error || `API error: ${response.status}`);
+    }
+    return json.data as T;
+  }
+  return json as T;
 }
 
 // Query keys

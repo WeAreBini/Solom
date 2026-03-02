@@ -112,7 +112,7 @@ export default function DashboardPage() {
             </Badge>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Last updated: {new Date().toLocaleTimeString()}</span>
+            <span suppressHydrationWarning>Last updated: {new Date().toLocaleTimeString()}</span>
             <Button variant="ghost" size="icon" className="h-7 w-7">
               <RefreshCw className="h-4 w-4" />
             </Button>
