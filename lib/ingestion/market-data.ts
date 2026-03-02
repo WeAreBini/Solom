@@ -52,7 +52,7 @@ export async function ingestAssetProfile(symbol: string) {
   }
 
   try {
-    const modules = ['summaryProfile', 'defaultKeyStatistics', 'summaryDetail', 'price'] as const;
+    const modules: string[] = ['summaryProfile', 'defaultKeyStatistics', 'summaryDetail', 'price'];
     const result = await withRetry(() => yahooFinance.quoteSummary(symbol, { modules }));
 
     if (!result || !(result as any).price) {
