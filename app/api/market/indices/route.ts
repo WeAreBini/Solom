@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import { getMarketIndices } from '@/lib/fmp';
-import type { MarketIndex } from '@/lib/types/stock';
 
 export const dynamic = 'force-dynamic';
 
+// Shape expected by the frontend (lib/api.ts MarketIndex)
+interface FrontendMarketIndex {
+  symbol: string;
+  name: string;
+  value: number;
+  change: number;
+  changePercent: number;
+}
+
 interface IndicesResponse {
   success: boolean;
-  data?: MarketIndex[];
+  data?: FrontendMarketIndex[];
   error?: string;
   count: number;
 }
@@ -15,10 +23,19 @@ export async function GET(): Promise<NextResponse<IndicesResponse>> {
   try {
     const indices = await getMarketIndices();
 
+    // Transform FMP field names to the shape the frontend hooks expect
+    const data: FrontendMarketIndex[] = indices.map((idx) => ({
+      symbol: idx.symbol,
+      name: idx.name,
+      value: idx.price,
+      change: idx.change,
+      changePercent: idx.changesPercentage,
+    }));
+
     return NextResponse.json({
       success: true,
-      data: indices,
-      count: indices.length,
+      data,
+      count: data.length,
     });
   } catch (error) {
     console.error('Market indices error:', error);
