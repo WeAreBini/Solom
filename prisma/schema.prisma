@@ -491,3 +491,78 @@ enum CopyStatus {
   PAUSED
   STOPPED
 }
+
+// ============================================
+// Market Data Models
+// ============================================
+
+model Asset {
+  id        String   @id @default(cuid())
+  symbol    String   @unique
+  name      String
+  type      String   // Stock, ETF, Crypto
+  exchange  String   // NASDAQ, NYSE, CRYPTO
+  currency  String   @default("USD")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  prices       HistoricalPrice[]
+  fundamentals CompanyFundamental?
+
+  @@map("assets")
+}
+
+model HistoricalPrice {
+  id        String   @id @default(cuid())
+  assetId   String   @map("asset_id")
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  time      DateTime
+  interval  String   // e.g. '1d', '1h', '5m', '1m'
+  // Using Float (double precision in PG) ensures fast inserts and charting speed, 
+  // preventing the significant overhead of Prisma mapping to Decimal.js objects
+  open      Float
+  high      Float
+  low       Float
+  close     Float
+  volume    BigInt
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Prevent duplicate intervals for the same timestamp on a given asset
+  @@unique([assetId, interval, time])
+  // Standard b-tree composite index strictly optimized for descending ordered range queries
+  @@index([assetId, interval, time(sort: Desc)])
+  @@map("historical_prices")
+}
+
+model CompanyFundamental {
+  id               String   @id @default(cuid())
+  assetId          String   @unique @map("asset_id")
+  asset            Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  sector           String?
+  industry         String?
+  marketCap        BigInt?  @map("market_cap")
+  peRatio          Float?   @map("pe_ratio")
+  dividendYield    Float?   @map("dividend_yield")
+  eps              Float?
+  beta             Float?
+  fiftyTwoWeekHigh Float?   @map("fifty_two_week_high")
+  fiftyTwoWeekLow  Float?   @map("fifty_two_week_low")
+  description      String?  @db.Text
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("company_fundamentals")
+}
+
+model ScrapeJob {
+  id          String   @id @default(cuid())
+  type        String   // 'EOD', 'INTRADAY', 'FUNDAMENTALS'
+  status      String   // 'PENDING', 'RUNNING', 'SUCCESS', 'FAILED'
+  startedAt   DateTime @default(now()) @map("started_at")
+  completedAt DateTime?                @map("completed_at")
+  errorLog    String?  @db.Text        @map("error_log")
+
+  // For quick dashboard metrics querying long-running/failed jobs
+  @@index([status, startedAt(sort: Desc)])
+  @@map("scrape_jobs")
+}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
 import { 
   HistoricalDataPoint, 
   IndicatorConfig,
@@ -9,7 +10,6 @@ import {
   calculateEMA, 
   calculateRSI, 
   calculateMACD,
-  generateSimulatedHistoricalData,
   validateIndicatorParams 
 } from '@/lib/indicators';
 
@@ -132,15 +132,51 @@ export async function GET(
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get('period') || '1Y';
+    const period = searchParams.get('period')?.toUpperCase() || '1Y';
     const requestedIndicators = searchParams.get('indicators')?.split(',') || [];
 
     // Get period days
-    const days = PERIOD_DAYS[period.toUpperCase()] || 365;
+    const days = PERIOD_DAYS[period] || 365;
 
-    // TODO: In production, fetch real historical data from API
-    // For now, generate simulated data
-    const historicalData = generateSimulatedHistoricalData(cleanSymbol, days);
+    // Determine the interval depending on period
+    let interval = '1d';
+    if (period === '1D') interval = '5m';
+    else if (period === '1W') interval = '1h';
+    else if (period === '1M') interval = '1d';
+    // Defaults to '1d' for 3M, 6M, 1Y, 2Y, 5Y
+
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - days);
+
+    // Fetch historical data directly from Prisma DB
+    const prices = await prisma.historicalPrice.findMany({
+      where: {
+        asset: {
+          symbol: cleanSymbol,
+        },
+        interval,
+        time: {
+          gte: fromDate,
+        },
+      },
+      orderBy: {
+        time: 'asc',
+      },
+    });
+
+    if (prices.length === 0) {
+      // Depending on actual usage, might just return an empty array without an error
+      // But we will return an empty historicalData to prevent crashes
+    }
+
+    const historicalData: HistoricalDataPoint[] = prices.map(p => ({
+      date: p.time.toISOString(), // Standard localized ISO
+      open: p.open,
+      high: p.high,
+      low: p.low,
+      close: p.close,
+      volume: Number(p.volume),
+    }));
 
     // Build indicator configurations from query params
     const indicators: IndicatorConfig[] = DEFAULT_INDICATORS.map(indicator => {
