@@ -59,11 +59,20 @@ export async function GET(request: NextRequest): Promise<NextResponse<MoversResp
       gainers = [];
     }
 
+    const mapMover = (m: MarketMover) => ({
+      symbol: m.symbol,
+      name: m.name,
+      price: m.price,
+      change: m.change,
+      changePercent: m.changesPercentage,
+      volume: m.volume,
+    });
+
     return NextResponse.json({
       success: true,
       data: {
-        gainers,
-        losers,
+        gainers: gainers.map(mapMover),
+        losers: losers.map(mapMover),
       },
       gainersCount: gainers.length,
       losersCount: losers.length,

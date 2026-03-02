@@ -99,7 +99,23 @@ export function useRealTimePrice(
       if (!response.ok) {
         throw new Error(`Failed to fetch quote: ${response.status}`);
       }
-      return response.json();
+      const json = await response.json();
+      if (!json.success) {
+        throw new Error(json.error || 'Failed to fetch quote');
+      }
+      const d = json.data;
+      return {
+        symbol: d.symbol,
+        name: d.name,
+        price: d.price,
+        change: d.change,
+        changePercent: d.changesPercentage,
+        volume: d.volume,
+        dayHigh: d.dayHigh,
+        dayLow: d.dayLow,
+        open: d.open,
+        previousClose: d.previousClose,
+      } as QuoteData;
     },
     enabled: enabled && !!symbol,
     staleTime: isUsingWebSocket ? Infinity : pollingInterval, // Don't refetch if using WebSocket

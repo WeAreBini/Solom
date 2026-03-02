@@ -17,7 +17,13 @@ export async function GET(): Promise<NextResponse<IndicesResponse>> {
 
     return NextResponse.json({
       success: true,
-      data: indices,
+      data: indices.map((idx: { symbol: string; name: string; price: number; change: number; changesPercentage: number }) => ({
+        symbol: idx.symbol,
+        name: idx.name,
+        value: idx.price,
+        change: idx.change,
+        changePercent: idx.changesPercentage,
+      })),
       count: indices.length,
     });
   } catch (error) {
