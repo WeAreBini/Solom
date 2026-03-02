@@ -1,75 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ingestAssetProfile, ingestHistoricalData } from '@/lib/ingestion/market-data';
 
+// Helper to serialize BigInt for JSON responses
+function serializeBigInt(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === 'bigint') return obj.toString();
+  if (Array.isArray(obj)) return obj.map(serializeBigInt);
+  if (typeof obj === 'object') {
+    if (obj instanceof Date) return obj.toISOString();
+    const serialized: any = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        serialized[key] = serializeBigInt(obj[key]);
+      }
+    }
+    return serialized;
+  }
+  return obj;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { action, symbol, period1, period2, interval } = body;
+    const { symbol } = body;
 
-    // Validate input
     if (!symbol || typeof symbol !== 'string') {
       return NextResponse.json(
-        { success: false, error: 'Valid symbol is required' },
+        { success: false, error: 'Valid symbol string is required' },
         { status: 400 }
       );
     }
 
     const sanitizedSymbol = symbol.toUpperCase().trim();
-    if (!/^[A-Z0-9.\-%]+$/.test(sanitizedSymbol)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid symbol format' },
-        { status: 400 }
-      );
-    }
 
-    if (!action || !['profile', 'historical', 'both'].includes(action)) {
-      return NextResponse.json(
-        { success: false, error: 'Valid action (profile, historical, both) is required' },
-        { status: 400 }
-      );
-    }
+    // 1. Ingest Asset Profile
+    const profileResult = await ingestAssetProfile(sanitizedSymbol);
 
-    const results: any = {};
+    // 2. Ingest Historical Data (5 years back)
+    const fiveYearsAgo = new Date();
+    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    const historicalResult = await ingestHistoricalData(sanitizedSymbol, fiveYearsAgo);
 
-    if (action === 'profile' || action === 'both') {
-      try {
-        const profileResult = await ingestAssetProfile(sanitizedSymbol);
-        results.profile = profileResult;
-      } catch (error: any) {
-        results.profile = { success: false, error: error.message };
-      }
-    }
+    const data = {
+      profile: profileResult,
+      historical: historicalResult,
+    };
 
-    if (action === 'historical' || action === 'both') {
-      try {
-        // Default period1 to 1 year ago if not provided
-        const defaultPeriod1 = new Date();
-        defaultPeriod1.setFullYear(defaultPeriod1.getFullYear() - 1);
-        
-        const p1 = period1 || defaultPeriod1;
-        const p2 = period2 || new Date();
-        const inv = interval || '1d';
+    return NextResponse.json(
+      { success: true, data: serializeBigInt(data) },
+      { status: 200 }
+    );
 
-        // Map yf intervals
-        const validIntervals = ['1d', '1h', '15m'] as const;
-        if (!validIntervals.includes(inv as any)) {
-           return NextResponse.json(
-             { success: false, error: `Invalid interval: ${inv}` },
-             { status: 400 }
-           );
-        }
-
-        const histResult = await ingestHistoricalData(sanitizedSymbol, p1, p2, inv as any);
-        results.historical = histResult;
-      } catch (error: any) {
-        results.historical = { success: false, error: error.message };
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: results,
-    });
   } catch (error: any) {
     console.error('Ingestion API Error:', error);
     return NextResponse.json(
