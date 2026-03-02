@@ -1,12 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import type { StockQuote } from '@/lib/types/stock';
+import { getStockQuote } from '@/lib/fmp';
 
 export const dynamic = 'force-dynamic';
 
+// Shape expected by the frontend (lib/api.ts StockQuote and lib/hooks/useRealTimePrice.ts QuoteData)
+interface FrontendStockQuote {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  avgVolume: number;
+  marketCap: number;
+  peRatio: number | null;
+  high52Week: number;
+  low52Week: number;
+  open: number;
+  previousClose: number;
+  dayHigh: number;
+  dayLow: number;
+  volume: number;
+}
+
 interface QuoteResponse {
   success: boolean;
-  data?: StockQuote;
+  data?: FrontendStockQuote;
   error?: string;
 }
 
@@ -39,18 +57,9 @@ export async function GET(
       );
     }
 
-    const asset = await prisma.asset.findUnique({
-      where: { symbol: cleanSymbol },
-      include: {
-        prices: {
-          orderBy: { time: 'desc' },
-          take: 2,
-        },
-        fundamentals: true,
-      }
-    });
+    const fmpQuote = await getStockQuote(cleanSymbol);
 
-    if (!asset || asset.prices.length === 0) {
+    if (!fmpQuote) {
       return NextResponse.json(
         {
           success: false,
@@ -60,39 +69,23 @@ export async function GET(
       );
     }
 
-    const latestPrice = asset.prices[0];
-    const previousPrice = asset.prices[1];
-
-    const price = latestPrice.close;
-    const previousClose = previousPrice ? previousPrice.close : latestPrice.open;
-    const change = price - previousClose;
-    const changesPercentage = previousClose !== 0 ? (change / previousClose) * 100 : 0;
-
-    const fundamentals = asset.fundamentals;
-
-    const quote: StockQuote = {
-      symbol: asset.symbol,
-      name: asset.name,
-      price: price,
-      changesPercentage: changesPercentage,
-      change: change,
-      dayLow: latestPrice.low,
-      dayHigh: latestPrice.high,
-      yearHigh: fundamentals?.fiftyTwoWeekHigh ?? latestPrice.high,
-      yearLow: fundamentals?.fiftyTwoWeekLow ?? latestPrice.low,
-      marketCap: fundamentals?.marketCap ? Number(fundamentals.marketCap) : 0,
-      priceAvg50: price, // Fallback if not calculated
-      priceAvg200: price, // Fallback if not calculated
-      exchange: asset.exchange,
-      volume: Number(latestPrice.volume),
-      avgVolume: Number(latestPrice.volume), // Fallback
-      open: latestPrice.open,
-      previousClose: previousClose,
-      eps: fundamentals?.eps ?? 0,
-      pe: fundamentals?.peRatio ?? 0,
-      earningsAnnouncement: '',
-      sharesOutstanding: 0,
-      timestamp: Math.floor(latestPrice.time.getTime() / 1000),
+    // Transform FMP field names to the shape the frontend hooks expect
+    const quote: FrontendStockQuote = {
+      symbol: fmpQuote.symbol,
+      name: fmpQuote.name,
+      price: fmpQuote.price,
+      change: fmpQuote.change,
+      changePercent: fmpQuote.changesPercentage,
+      avgVolume: fmpQuote.avgVolume,
+      marketCap: fmpQuote.marketCap,
+      peRatio: fmpQuote.pe ?? null,
+      high52Week: fmpQuote.yearHigh,
+      low52Week: fmpQuote.yearLow,
+      open: fmpQuote.open,
+      previousClose: fmpQuote.previousClose,
+      dayHigh: fmpQuote.dayHigh,
+      dayLow: fmpQuote.dayLow,
+      volume: fmpQuote.volume,
     };
 
     return NextResponse.json({
@@ -103,6 +96,16 @@ export async function GET(
     console.error('Stock quote error:', error);
     
     const message = error instanceof Error ? error.message : 'Unknown error occurred';
+
+    if (message.includes('FMP_API_KEY')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Server configuration error: FMP API key not configured',
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(
       {

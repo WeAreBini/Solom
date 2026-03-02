@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchStocks } from '@/lib/fmp';
-import type { StockSearchResult } from '@/lib/types/stock';
+import { searchStocks, getMultipleQuotes } from '@/lib/fmp';
 import { parseLimitParam } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 
+// Shape expected by the frontend (lib/api.ts StockSearchResult)
+interface FrontendSearchResult {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  volume: number;
+  marketCap: number;
+  peRatio: number | null;
+}
+
 interface SearchResponse {
   success: boolean;
-  data?: StockSearchResult[];
+  data?: FrontendSearchResult[];
   error?: string;
   count: number;
 }
@@ -63,12 +74,35 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchResp
       );
     }
 
-    const results = await searchStocks(query, limit);
+    const searchResults = await searchStocks(query, limit);
+
+    if (searchResults.length === 0) {
+      return NextResponse.json({ success: true, data: [], count: 0 });
+    }
+
+    // Batch-fetch quotes to enrich results with price data
+    const symbols = searchResults.map((r) => r.symbol);
+    const quotes = await getMultipleQuotes(symbols);
+    const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
+
+    const data: FrontendSearchResult[] = searchResults.map((result) => {
+      const quote = quoteMap.get(result.symbol);
+      return {
+        symbol: result.symbol,
+        name: result.name,
+        price: quote?.price ?? 0,
+        change: quote?.change ?? 0,
+        changePercent: quote?.changesPercentage ?? 0,
+        volume: quote?.volume ?? 0,
+        marketCap: quote?.marketCap ?? 0,
+        peRatio: quote?.pe ?? null,
+      };
+    });
 
     return NextResponse.json({
       success: true,
-      data: results,
-      count: results.length,
+      data,
+      count: data.length,
     });
   } catch (error) {
     console.error('Stock search error:', error);

@@ -99,7 +99,14 @@ export function useRealTimePrice(
       if (!response.ok) {
         throw new Error(`Failed to fetch quote: ${response.status}`);
       }
-      return response.json();
+      const json = await response.json();
+      if (!json.success) {
+        throw new Error(json.error || `Failed to fetch quote for ${symbol}`);
+      }
+      if (!json.data) {
+        throw new Error(`No data returned for ${symbol}`);
+      }
+      return json.data as QuoteData;
     },
     enabled: enabled && !!symbol,
     staleTime: isUsingWebSocket ? Infinity : pollingInterval, // Don't refetch if using WebSocket
@@ -302,8 +309,10 @@ export function useRealTimePrices(
         try {
           const response = await fetch(`/api/stocks/${symbol}/quote`);
           if (!response.ok) throw new Error(`Failed to fetch ${symbol}`);
-          const quote = await response.json();
-          return { symbol, quote };
+          const json = await response.json();
+          if (!json.success) throw new Error(json.error || `Failed to fetch ${symbol}`);
+          if (!json.data) throw new Error(`No data returned for ${symbol}`);
+          return { symbol, quote: json.data };
         } catch (err) {
           setErrors((prev) => {
             const newErrors = new Map(prev);
