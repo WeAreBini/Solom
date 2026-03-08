@@ -5,20 +5,20 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   MarketOverview,
   StockSearch,
   MarketMovers,
   Watchlist,
-  StockQuoteDetail,
+  Sidebar,
+  CommandPalette,
+  StockDetailModal,
 } from "@/components/dashboard";
 import {
   Sparkles,
-  Search,
-  TrendingUp,
-  Activity,
   RefreshCw,
-  ExternalLink,
+  Command,
 } from "lucide-react";
 
 // Local storage key for watchlist persistence
@@ -27,6 +27,7 @@ const WATCHLIST_KEY = "solom_watchlist";
 export default function DashboardPage() {
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [selectedStock, setSelectedStock] = useState<string | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const initializedRef = useRef(false);
 
@@ -64,137 +65,160 @@ export default function DashboardPage() {
     setWatchlist((prev) => prev.filter((s) => s !== symbol));
   };
 
+  const handleStockSelect = (symbol: string) => {
+    setSelectedStock(symbol);
+    setDetailModalOpen(true);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <span className="text-xl font-bold">Solom</span>
-            <Badge variant="secondary" className="ml-2">
-              Markets
-            </Badge>
-          </Link>
-          <nav className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/">
-                Home
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              API Docs
-            </Button>
-          </nav>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background">
+      {/* Sidebar */}
+      <Sidebar />
+
+      {/* Command Palette */}
+      <CommandPalette onStockSelect={handleStockSelect} />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {/* Title Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Stock Market Dashboard</h1>
-          <p className="mt-2 text-muted-foreground">
-            Real-time market data, stock quotes, and market movers
-          </p>
-        </div>
+      <div className="pl-64 transition-all duration-300">
+        {/* Header */}
+        <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur-sm">
+          <div className="flex h-16 items-center justify-between px-6">
+            <div>
+              <h1 className="text-xl font-semibold">Stock Market Dashboard</h1>
+              <p className="text-sm text-muted-foreground">
+                Real-time market data and stock quotes
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Keyboard Shortcut Hint */}
+              <div className="hidden items-center gap-1 rounded-md border bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground md:flex">
+                <Command className="h-3 w-3" />
+                <span>K</span>
+                <span className="mx-1">to search</span>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/">Home</Link>
+              </Button>
+            </div>
+          </div>
+        </header>
 
         {/* Market Status Bar */}
-        <div className="mb-6 flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-            <span className="text-sm font-medium">Market Open</span>
-            <Badge variant="success" className="text-xs">
-              Live
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span suppressHydrationWarning>Last updated: {new Date().toLocaleTimeString()}</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7">
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Market Overview */}
-        <section className="mb-8">
-          <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
-            <Activity className="h-5 w-5 text-primary" />
-            Market Overview
-          </h2>
-          <MarketOverview />
-        </section>
-
-        {/* Main Dashboard Content */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left Column - Search & Movers */}
-          <div className="space-y-6 lg:col-span-2">
-            {/* Tabs for Search and Market Movers */}
-            <Tabs defaultValue="search" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="search" className="flex items-center gap-2">
-                  <Search className="h-4 w-4" />
-                  Stock Search
-                </TabsTrigger>
-                <TabsTrigger value="movers" className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Market Movers
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="search" className="mt-4">
-                <StockSearch
-                  onAddToWatchlist={addToWatchlist}
-                  watchlistSymbols={new Set(watchlist)}
-                />
-              </TabsContent>
-
-              <TabsContent value="movers" className="mt-4">
-                <MarketMovers />
-              </TabsContent>
-            </Tabs>
-
-            {/* Selected Stock Detail */}
-            {selectedStock && (
-              <section className="mt-6">
-                <StockQuoteDetail
-                  symbol={selectedStock}
-                  onClose={() => setSelectedStock(null)}
-                />
-              </section>
-            )}
-          </div>
-
-          {/* Right Column - Watchlist */}
-          <div>
-            <Watchlist
-              symbols={watchlist}
-              onRemove={removeFromWatchlist}
-            />
+        <div className="border-b bg-muted/30">
+          <div className="flex items-center justify-between px-6 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                <span className="text-sm font-medium">Market Open</span>
+              </div>
+              <Badge variant="success" className="font-mono text-[10px]">
+                LIVE
+              </Badge>
+            </div>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span>
+                Last updated: {new Date().toLocaleTimeString()}
+              </span>
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Information Footer */}
-        <section className="mt-12 rounded-lg border bg-muted/30 p-6">
-          <h3 className="mb-2 font-semibold">About This Dashboard</h3>
-          <p className="text-sm text-muted-foreground">
-            This dashboard provides real-time stock market data simulation. Market indices,
-            stock quotes, and market movers are randomly generated for demonstration purposes.
-            In production, data would be fetched from real financial APIs. Watchlist data is
-            persisted in your browser&apos;s local storage.
-          </p>
-        </section>
-      </main>
+        {/* Dashboard Content */}
+        <main className="p-6">
+          {/* Market Overview */}
+          <section className="mb-8">
+            <h2 className="mb-4 text-lg font-semibold">Market Overview</h2>
+            <MarketOverview />
+          </section>
 
-      {/* Footer */}
-      <footer className="border-t py-8">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2026 Solom. Built with ❤️ by WeAreBini</p>
-        </div>
-      </footer>
+          {/* Main Grid */}
+          <div className="grid gap-6 lg:grid-cols-12">
+            {/* Left Column - Search & Movers */}
+            <div className="space-y-6 lg:col-span-8">
+              <Tabs defaultValue="search" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="search" className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Stock Search
+                  </TabsTrigger>
+                  <TabsTrigger value="movers" className="gap-2">
+                    <RefreshCw className="h-4 w-4" />
+                    Market Movers
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="search" className="mt-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Search Stocks</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <StockSearch
+                        onAddToWatchlist={addToWatchlist}
+                        watchlistSymbols={new Set(watchlist)}
+                        onStockSelect={handleStockSelect}
+                      />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="movers" className="mt-4">
+                  <MarketMovers />
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* Right Column - Watchlist */}
+            <div className="lg:col-span-4">
+              <Watchlist
+                symbols={watchlist}
+                onRemove={removeFromWatchlist}
+                onStockClick={handleStockSelect}
+              />
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <section className="mt-8">
+            <Card className="bg-gradient-to-r from-primary/5 via-background to-primary/5">
+              <CardContent className="p-6">
+                <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+                  <QuickStat label="Indices Tracked" value="3" />
+                  <QuickStat label="Stocks Available" value="100+" />
+                  <QuickStat label="Data Update" value="Real-time" />
+                  <QuickStat label="Watchlist Items" value={watchlist.length.toString()} />
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t py-6 text-center text-sm text-muted-foreground">
+          <p>© 2026 Solom Finance Platform • Built with Next.js & shadcn/ui</p>
+        </footer>
+      </div>
+
+      {/* Stock Detail Modal */}
+      <StockDetailModal
+        symbol={selectedStock}
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+        onAddToWatchlist={addToWatchlist}
+        watchlistSymbols={new Set(watchlist)}
+      />
+    </div>
+  );
+}
+
+function QuickStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-center">
+      <div className="text-2xl font-bold">{value}</div>
+      <div className="text-sm text-muted-foreground">{label}</div>
     </div>
   );
 }
