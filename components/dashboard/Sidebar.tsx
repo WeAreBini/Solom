@@ -6,11 +6,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   TrendingUp,
-  Search,
   Star,
   BarChart3,
-  Newspaper,
-  Settings,
   Sparkles,
   ChevronLeft,
   ChevronRight,
@@ -25,28 +22,22 @@ const navItems = [
     description: "Market overview & indices",
   },
   {
-    title: "Search",
-    href: "/dashboard?tab=search",
-    icon: Search,
-    description: "Find stocks & ETFs",
-  },
-  {
-    title: "Watchlist",
-    href: "/dashboard?tab=watchlist",
-    icon: Star,
-    description: "Your saved stocks",
-  },
-  {
-    title: "Analytics",
-    href: "/dashboard?tab=analytics",
+    title: "Stocks",
+    href: "/dashboard/stocks",
     icon: BarChart3,
-    description: "Charts & analysis",
+    description: "Full stock dashboard",
   },
   {
-    title: "News",
-    href: "/dashboard?tab=news",
-    icon: Newspaper,
-    description: "Market news & updates",
+    title: "Finance",
+    href: "/dashboard/finance",
+    icon: BarChart3,
+    description: "Finance dashboard",
+  },
+  {
+    title: "Social",
+    href: "/dashboard/social",
+    icon: Star,
+    description: "Social trading",
   },
 ];
 

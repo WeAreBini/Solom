@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConnectionStatusIndicator } from "@/components/ui/connection-status";
+import { useConnectionStatus } from "@/components/ui/connection-status";
 import { KPIGrid } from "@/components/dashboard/kpi-card";
 import { PriceLineChart, LineChart } from "@/components/charts/line-chart";
 import { useMarketIndices } from "@/lib/api";
@@ -14,6 +16,7 @@ import { Sparkles, TrendingUp, TrendingDown, Activity, DollarSign, Percent, BarC
 
 export default function FinanceDashboardPage() {
   const [mounted, setMounted] = useState(false);
+  const connectionStatus = useConnectionStatus();
 
   useEffect(() => {
     setMounted(true);
@@ -65,6 +68,10 @@ export default function FinanceDashboardPage() {
             <Badge variant="secondary" className="ml-2">Finance Dashboard</Badge>
           </Link>
           <nav className="flex items-center gap-2">
+            <ConnectionStatusIndicator 
+              status={connectionStatus.status}
+              showLabel={false}
+            />
             <Button variant="ghost" size="sm" asChild><Link href="/dashboard">Classic View</Link></Button>
             <Button variant="outline" size="sm" asChild><Link href="/" target="_blank"><ExternalLink className="mr-2 h-4 w-4" />API Docs</Link></Button>
           </nav>

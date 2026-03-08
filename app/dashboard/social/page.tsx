@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConnectionStatusIndicator } from "@/components/ui/connection-status";
+import { useConnectionStatus } from "@/components/ui/connection-status";
 import { IdeaCard, IdeaCardSkeleton } from "@/components/social/IdeaCard";
 import { useFeed, useCreateIdea, useToggleLike, useToggleBookmark } from "@/lib/hooks/use-social";
 import type { FeedType, Timeframe, TradeDirection, Visibility } from "@/lib/types/social";
@@ -35,6 +37,7 @@ export default function SocialPage() {
   const [feedType, setFeedType] = useState<FeedType>('trending');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [tickerFilter, setTickerFilter] = useState<string>('');
+  const connectionStatus = useConnectionStatus();
 
   const { data, isLoading, refetch, isFetching } = useFeed(feedType, tickerFilter || undefined);
   const createIdea = useCreateIdea();
@@ -58,6 +61,10 @@ export default function SocialPage() {
             </Badge>
           </Link>
           <nav className="flex items-center gap-2">
+            <ConnectionStatusIndicator 
+              status={connectionStatus.status}
+              showLabel={false}
+            />
             <Button variant="ghost" size="sm" asChild>
               <Link href="/dashboard">
                 Markets
