@@ -20,9 +20,9 @@ export async function GET(): Promise<NextResponse<IndicesResponse>> {
       data: indices.map((idx: { symbol: string; name: string; price: number; change: number; changesPercentage: number }) => ({
         symbol: idx.symbol,
         name: idx.name,
-        value: idx.price,
+        price: idx.price,
         change: idx.change,
-        changePercent: idx.changesPercentage,
+        changesPercentage: idx.changesPercentage,
       })),
       count: indices.length,
     });

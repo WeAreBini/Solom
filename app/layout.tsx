@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Solom - AI Agent Toolkit",
-  description: "Council Mode, Web Operator, System 2 Reasoning - Next-gen AI agent capabilities",
+  title: "Solom - Financial Intelligence Platform",
+  description: "Real-time market data, stock quotes, crypto tracking, forex analysis, and comprehensive financial intelligence for informed decisions.",
 };
 
 export default function RootLayout({

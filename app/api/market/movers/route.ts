@@ -59,13 +59,28 @@ export async function GET(request: NextRequest): Promise<NextResponse<MoversResp
       gainers = [];
     }
 
+    // Return movers data with consistent field names
     const mapMover = (m: MarketMover) => ({
       symbol: m.symbol,
       name: m.name,
       price: m.price,
       change: m.change,
-      changePercent: m.changesPercentage,
+      changesPercentage: m.changesPercentage,
+      dayLow: m.dayLow,
+      dayHigh: m.dayHigh,
+      yearHigh: m.yearHigh,
+      yearLow: m.yearLow,
+      marketCap: m.marketCap,
       volume: m.volume,
+      avgVolume: m.avgVolume,
+      exchange: m.exchange,
+      open: m.open,
+      previousClose: m.previousClose,
+      eps: m.eps,
+      pe: m.pe,
+      earningsAnnouncement: m.earningsAnnouncement,
+      sharesOutstanding: m.sharesOutstanding,
+      timestamp: m.timestamp,
     });
 
     return NextResponse.json({
