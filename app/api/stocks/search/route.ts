@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchStocks } from '@/lib/fmp';
+import { searchStocks, isFMPConfigured } from '@/lib/fmp';
 import type { StockSearchResult } from '@/lib/types/stock';
 import { parseLimitParam } from '@/lib/api-utils';
 
@@ -10,6 +10,7 @@ interface SearchResponse {
   data?: StockSearchResult[];
   error?: string;
   count: number;
+  demo?: boolean;
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse<SearchResponse>> {
@@ -64,28 +65,18 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchResp
     }
 
     const results = await searchStocks(query, limit);
+    const isDemo = !isFMPConfigured();
 
     return NextResponse.json({
       success: true,
       data: results,
       count: results.length,
+      demo: isDemo,
     });
   } catch (error) {
     console.error('Stock search error:', error);
     
     const message = error instanceof Error ? error.message : 'Unknown error occurred';
-    
-    // Check for FMP API key error
-    if (message.includes('FMP_API_KEY')) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Server configuration error: FMP API key not configured',
-          count: 0,
-        },
-        { status: 500 }
-      );
-    }
 
     return NextResponse.json(
       {

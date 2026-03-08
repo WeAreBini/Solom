@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMarketMovers } from '@/lib/fmp';
+import { getMarketMovers, isFMPConfigured } from '@/lib/fmp';
 import type { MarketMover } from '@/lib/types/stock';
 import { parseLimitParam } from '@/lib/api-utils';
 
@@ -14,6 +14,7 @@ interface MoversResponse {
   error?: string;
   gainersCount: number;
   losersCount: number;
+  demo?: boolean;
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse<MoversResponse>> {
@@ -48,6 +49,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<MoversResp
     }
 
     const movers = await getMarketMovers();
+    const isDemo = !isFMPConfigured();
 
     // Filter by type if specified
     let gainers = movers.gainers.slice(0, limit);
@@ -91,24 +93,12 @@ export async function GET(request: NextRequest): Promise<NextResponse<MoversResp
       },
       gainersCount: gainers.length,
       losersCount: losers.length,
+      demo: isDemo,
     });
   } catch (error) {
     console.error('Market movers error:', error);
     
     const message = error instanceof Error ? error.message : 'Unknown error occurred';
-    
-    // Check for FMP API key error
-    if (message.includes('FMP_API_KEY')) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Server configuration error: FMP API key not configured',
-          gainersCount: 0,
-          losersCount: 0,
-        },
-        { status: 500 }
-      );
-    }
 
     return NextResponse.json(
       {
