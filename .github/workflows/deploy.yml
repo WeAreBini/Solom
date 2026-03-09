@@ -1,0 +1,37 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      
+      - name: Link to Railway Project
+        run: railway link --project c6a9d92e-4343-4545-9efc-a80a488abb0d --environment production
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      
+      - name: Deploy All Services
+        run: |
+          echo "Deploying Backend..."
+          cd backend && railway up --detach
+          
+          echo "Deploying Workers..."
+          railway up --detach
+          
+          echo "Deploying Frontend..."
+          cd ../frontend && railway up --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

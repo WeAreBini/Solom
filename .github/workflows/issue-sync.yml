@@ -1,0 +1,38 @@
+name: Issue Sync
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened, labeled]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Sync to Paperclip
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync GitHub Issue to Paperclip
+        if: env.PAPERCLIP_WEBHOOK != ''
+        env:
+          PAPERCLIP_WEBHOOK: ${{ secrets.PAPERCLIP_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_BODY="${{ github.event.issue.body }}"
+          ISSUE_STATE="${{ github.event.issue.state }}"
+          ISSUE_LABELS="${{ join(github.event.issue.labels.*.name, ',') }}"
+
+          curl -X POST "${PAPERCLIP_WEBHOOK}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "event": "github_issue",
+              "source": "github",
+              "data": {
+                "number": "'"${ISSUE_NUMBER}"'",
+                "title": "'"${ISSUE_TITLE}"'",
+                "body": "'"${ISSUE_BODY}"'",
+                "state": "'"${ISSUE_STATE}"'",
+                "labels": "'"${ISSUE_LABELS}"'",
+                "repository": "${{ github.repository }}"
+              }
+            }'

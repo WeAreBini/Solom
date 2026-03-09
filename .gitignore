@@ -41,3 +41,28 @@ next-env.d.ts
 
 # Prisma 7 generated client
 generated/
+
+# Bini Secrets
+.env.bini
+*.env
+
+# Keep tokens out of memory files
+memory/**/tokens*
+
+# Paperclip API keys (never commit these)
+paperclip-*-api-key.json
+paperclip-*-claim.json
+paperclip-env.sh
+
+# Session files and workspace caches
+session-*.txt
+workspace-*/
+
+# Local development files
+*.log
+*.pid
+
+# Temporary files
+*.tmp
+*.temp
+EOF

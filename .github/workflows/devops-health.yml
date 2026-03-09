@@ -1,0 +1,48 @@
+name: DevOps Health Check
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: Infrastructure Health Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Railway Services
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          npm install -g @railway/cli
+          railway status
+          railway logs --tail 100
+
+      - name: Check Paperclip Status
+        env:
+          PAPERCLIP_API_URL: ${{ secrets.PAPERCLIP_API_URL }}
+          PAPERCLIP_API_KEY: ${{ secrets.PAPERCLIP_API_KEY }}
+        run: |
+          curl -s "${PAPERCLIP_API_URL}/api/agents/me" \
+            -H "Authorization: Bearer ${PAPERCLIP_API_KEY}" \
+            --fail
+
+      - name: Check Supabase Connection
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          curl -s "${SUPABASE_URL}/rest/v1/" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            --fail
+
+      - name: Health Report
+        if: always()
+        run: |
+          echo "## DevOps Health Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Railway | ${{ steps.railway.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Paperclip | ${{ steps.paperclip.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Supabase | ${{ steps.supabase.outcome }} |" >> $GITHUB_STEP_SUMMARY
