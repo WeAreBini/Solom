@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useMarketIndices } from "@/lib/api";
+import { useMarketIndices } from "@/lib/solom-api";
 import { TrendingUp, TrendingDown, Activity } from "lucide-react";
 
 export function MarketOverview() {

@@ -6,7 +6,7 @@ import yahooFinance from 'yahoo-finance2';
  */
 export async function ingestAssetProfile(symbol: string) {
   symbol = symbol.toUpperCase().trim();
-  const quote = await yahooFinance.quote(symbol);
+  const quote = await (yahooFinance as any).quote(symbol);
   if (!quote) throw new Error(`Could not fetch quote for ${symbol}`);
   
   // Upsert Asset
@@ -16,21 +16,26 @@ export async function ingestAssetProfile(symbol: string) {
       symbol,
       name: quote.shortName || quote.longName || symbol,
       type: quote.quoteType || 'EQUITY',
-      exchange: (quote as any).fullExchangeName || quote.exchange || 'UNKNOWN',
+      exchange: quote.fullExchangeName || quote.exchange || 'UNKNOWN',
       currency: quote.currency || 'USD',
       active: true,
     },
     update: {
       name: quote.shortName || quote.longName || symbol,
       type: quote.quoteType || 'EQUITY',
-      exchange: (quote as any).fullExchangeName || quote.exchange || 'UNKNOWN',
+      exchange: quote.fullExchangeName || quote.exchange || 'UNKNOWN',
       currency: quote.currency || 'USD',
     }
   });
 
-  const quoteSummary = await yahooFinance.quoteSummary(symbol, {
-    modules: ['summaryDetail', 'summaryProfile', 'defaultKeyStatistics']
-  }).catch(() => null);
+  let quoteSummary: any = null;
+  try {
+    quoteSummary = await (yahooFinance as any).quoteSummary(symbol, {
+      modules: ['summaryDetail', 'summaryProfile', 'defaultKeyStatistics']
+    });
+  } catch {
+    // Ignore errors
+  }
 
   const marketCap = quote.marketCap ? BigInt(quote.marketCap) : null;
   
@@ -92,9 +97,9 @@ export async function ingestHistoricalData(symbol: string, period1: string | Dat
     interval: '1d' as const,
   };
 
-  const results = await yahooFinance.historical(symbol, queryOptions);
+  const results = await (yahooFinance as any).historical(symbol, queryOptions);
   
-  const data = results.map(row => ({
+  const data = (results || []).map((row: any) => ({
     assetId: asset.id,
     time: row.date,
     interval: '1d',

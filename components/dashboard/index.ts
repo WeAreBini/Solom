@@ -7,3 +7,5 @@ export { StockQuoteDetail } from "./StockQuoteDetail";
 export { Sidebar } from "./Sidebar";
 export { StockDetailModal } from "./StockDetailModal";
 export { CommandPalette } from "./CommandPalette";
+export { PriceAlerts, AlertNotifications } from "./PriceAlerts";
+export { KPICard, KPIGrid } from "./kpi-card";

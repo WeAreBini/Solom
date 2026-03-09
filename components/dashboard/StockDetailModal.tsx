@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { trpc } from "@/lib/trpc";
+import { useStockQuote, useStockProfile } from "@/lib/solom-api";
 import {
   TrendingUp,
   TrendingDown,
@@ -39,14 +38,11 @@ export function StockDetailModal({
   onAddToWatchlist,
   watchlistSymbols = new Set(),
 }: StockDetailModalProps) {
-  const [selectedTab, setSelectedTab] = useState("overview");
+  const { data: quote, isLoading: quoteLoading, error: quoteError } = useStockQuote(symbol || "");
+  const { data: profile, isLoading: profileLoading } = useStockProfile(symbol || "");
   
-  const { data: quotes, isLoading, error } = trpc.finance.searchStocks.useQuery(
-    { query: symbol || "" },
-    { enabled: !!symbol && open }
-  );
-
-  const stock = quotes?.find((q) => q.symbol === symbol);
+  const isLoading = quoteLoading || profileLoading;
+  const error = quoteError;
   const isInWatchlist = symbol ? watchlistSymbols.has(symbol) : false;
 
   if (!symbol) return null;
@@ -69,24 +65,24 @@ export function StockDetailModal({
           <div className="py-8 text-center text-destructive">
             Failed to load stock details
           </div>
-        ) : stock ? (
+        ) : quote ? (
           <>
             <DialogHeader>
               <div className="flex items-start justify-between">
                 <div>
                   <DialogTitle className="flex items-center gap-3 text-2xl">
-                    {stock.symbol}
-                    <Badge variant={stock.change >= 0 ? "success" : "destructive"}>
-                      {stock.change >= 0 ? "+" : ""}{stock.changePercent.toFixed(2)}%
+                    {quote.symbol}
+                    <Badge variant={quote.change >= 0 ? "success" : "destructive"}>
+                      {quote.change >= 0 ? "+" : ""}{quote.changePercent.toFixed(2)}%
                     </Badge>
                   </DialogTitle>
                   <DialogDescription className="text-base">
-                    {stock.name}
+                    {profile?.companyName || quote.name}
                   </DialogDescription>
                 </div>
                 <Button
                   variant={isInWatchlist ? "secondary" : "outline"}
-                  onClick={() => onAddToWatchlist?.(stock.symbol)}
+                  onClick={() => onAddToWatchlist?.(quote.symbol)}
                   disabled={isInWatchlist}
                 >
                   {isInWatchlist ? (
@@ -111,10 +107,10 @@ export function StockDetailModal({
                   <DollarSign className="h-4 w-4" />
                   Price
                 </div>
-                <div className="mt-1 text-2xl font-bold">${stock.price.toFixed(2)}</div>
-                <div className={`flex items-center gap-1 text-sm ${stock.change >= 0 ? "text-emerald-500" : "text-red-500"}`}>
-                  {stock.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {stock.change >= 0 ? "+" : ""}{stock.change.toFixed(2)}
+                <div className="mt-1 text-2xl font-bold">${quote.price.toFixed(2)}</div>
+                <div className={`flex items-center gap-1 text-sm ${quote.change >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                  {quote.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  {quote.change >= 0 ? "+" : ""}{quote.change.toFixed(2)}
                 </div>
               </div>
               
@@ -123,7 +119,7 @@ export function StockDetailModal({
                   <BarChart3 className="h-4 w-4" />
                   Market Cap
                 </div>
-                <div className="mt-1 text-2xl font-bold">{formatNumber(stock.marketCap)}</div>
+                <div className="mt-1 text-2xl font-bold">{formatNumber(quote.marketCap)}</div>
               </div>
               
               <div className="rounded-lg border bg-muted/50 p-4">
@@ -132,13 +128,27 @@ export function StockDetailModal({
                   P/E Ratio
                 </div>
                 <div className="mt-1 text-2xl font-bold">
-                  {stock.peRatio?.toFixed(1) ?? "N/A"}
+                  {quote.peRatio?.toFixed(1) ?? "N/A"}
                 </div>
               </div>
             </div>
 
+            {/* Additional Info */}
+            {profile && (
+              <div className="mb-4 grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Sector:</span>{" "}
+                  <span className="font-medium">{profile.sector}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Industry:</span>{" "}
+                  <span className="font-medium">{profile.industry}</span>
+                </div>
+              </div>
+            )}
+
             {/* Tabs */}
-            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+            <Tabs defaultValue="overview">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="financials">Financials</TabsTrigger>
@@ -150,25 +160,25 @@ export function StockDetailModal({
                   <div className="rounded-lg border p-4">
                     <div className="text-sm text-muted-foreground">Volume</div>
                     <div className="mt-1 text-lg font-medium">
-                      {stock.volume.toLocaleString()}
+                      {quote.volume.toLocaleString()}
                     </div>
                   </div>
                   <div className="rounded-lg border p-4">
                     <div className="text-sm text-muted-foreground">Avg Volume</div>
                     <div className="mt-1 text-lg font-medium">
-                      {(stock.volume * 0.8).toLocaleString()}
+                      {quote.avgVolume.toLocaleString()}
                     </div>
                   </div>
                   <div className="rounded-lg border p-4">
                     <div className="text-sm text-muted-foreground">52W High</div>
                     <div className="mt-1 text-lg font-medium text-emerald-500">
-                      ${(stock.price * 1.15).toFixed(2)}
+                      ${quote.high52Week.toFixed(2)}
                     </div>
                   </div>
                   <div className="rounded-lg border p-4">
                     <div className="text-sm text-muted-foreground">52W Low</div>
                     <div className="mt-1 text-lg font-medium text-red-500">
-                      ${(stock.price * 0.85).toFixed(2)}
+                      ${quote.low52Week.toFixed(2)}
                     </div>
                   </div>
                 </div>
@@ -189,7 +199,7 @@ export function StockDetailModal({
                   <Clock className="mx-auto mb-2 h-8 w-8 opacity-50" />
                   <p>News feed coming soon</p>
                   <p className="mt-1 text-sm">
-                    Latest news and analysis for {stock.symbol} will be available here
+                    Latest news and analysis for {quote.symbol} will be available here
                   </p>
                 </div>
               </TabsContent>

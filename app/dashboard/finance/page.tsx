@@ -9,7 +9,7 @@ import { ConnectionStatusIndicator } from "@/components/ui/connection-status";
 import { useConnectionStatus } from "@/components/ui/connection-status";
 import { KPIGrid } from "@/components/dashboard/kpi-card";
 import { PriceLineChart, LineChart } from "@/components/charts/line-chart";
-import { useMarketIndices } from "@/lib/api";
+import { useMarketIndices } from "@/lib/solom-api";
 import { chartColors } from "@/lib/design-tokens";
 import { useHistoricalData } from "@/hooks/use-real-time-data";
 import { Sparkles, TrendingUp, TrendingDown, Activity, DollarSign, Percent, BarChart3, RefreshCw, ExternalLink, ArrowUpRight, Zap, Clock } from "lucide-react";

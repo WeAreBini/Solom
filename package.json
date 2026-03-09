@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.4.2",
     "@prisma/client": "6",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -37,10 +38,13 @@
     "prisma": "6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "recharts": "^3.8.0",
     "serpapi": "^2.2.1",
     "socket.io-client": "^4.8.3",
     "superjson": "^2.2.6",
     "tailwind-merge": "^3.5.0",
+    "technicalindicators": "^3.1.0",
+    "yahoo-finance2": "^3.13.2",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },

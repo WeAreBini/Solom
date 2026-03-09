@@ -3,13 +3,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { trpc } from "@/lib/trpc";
+import { useMarketMovers } from "@/lib/solom-api";
 import { TrendingUp, TrendingDown, Flame, Snowflake } from "lucide-react";
 
 export function MarketMovers() {
-  const { data: stocks, isLoading, error } = trpc.finance.searchStocks.useQuery(
-    { query: "" }
-  );
+  const { data: movers, isLoading, error } = useMarketMovers();
 
   if (isLoading) {
     return (
@@ -35,7 +33,7 @@ export function MarketMovers() {
     );
   }
 
-  if (error || !stocks) {
+  if (error || !movers) {
     return (
       <Card>
         <CardHeader>
@@ -53,10 +51,8 @@ export function MarketMovers() {
     );
   }
 
-  // Sort by change percent for gainers and losers
-  const sortedStocks = [...stocks].sort((a, b) => b.changePercent - a.changePercent);
-  const gainers = sortedStocks.filter(s => s.changePercent > 0).slice(0, 5);
-  const losers = sortedStocks.filter(s => s.changePercent < 0).slice(-5).reverse();
+  const gainers = movers.gainers || [];
+  const losers = movers.losers || [];
 
   return (
     <div className="space-y-6">
@@ -126,7 +122,7 @@ function MoverRow({ stock, isGainer }: MoverRowProps) {
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <span className="font-semibold">{stock.symbol}</span>
-          <span className="text-xs text-muted-foreground">{stock.name.slice(0, 15)}</span>
+          <span className="text-xs text-muted-foreground">{stock.name?.slice(0, 15) || stock.symbol}</span>
         </div>
         <div className="mt-0.5 text-sm text-muted-foreground">
           ${stock.price.toFixed(2)}

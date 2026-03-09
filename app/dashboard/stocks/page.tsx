@@ -20,7 +20,7 @@ import {
   KPIGrid,
 } from "@/components/dashboard";
 import { useWatchlist, useWatchlistMutations, useAlerts } from "@/lib/hooks/use-alerts";
-import { useMarketIndices, useMarketMovers } from "@/lib/api";
+import { useMarketIndices, useMarketMovers } from "@/lib/solom-api";
 import { useRealTimePrices } from "@/lib/hooks";
 import {
   Sparkles,

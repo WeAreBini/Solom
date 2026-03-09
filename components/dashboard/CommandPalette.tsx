@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { trpc } from "@/lib/trpc";
-import { TrendingUp, Search, Star, BarChart3, Settings, Newspaper, Clock } from "lucide-react";
+import { useStockSearch } from "@/lib/solom-api";
+import { TrendingUp, Search, Star, BarChart3, Settings, Newspaper, Clock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CommandPaletteProps {
@@ -33,127 +33,147 @@ export function CommandPalette({ onStockSelect }: CommandPaletteProps) {
   const router = useRouter();
 
   // Keyboard shortcut
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      setOpen((open) => !open);
-    }
-    if (e.key === "Escape" && open) {
-      setOpen(false);
-    }
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setOpen((prev) => !prev);
+      }
+      if (e.key === "Escape" && open) {
+        setOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
-  // Register keyboard listener
-  if (typeof window !== "undefined") {
-    // Using useCallback to stabilize the handler
-    // This is a simple way to avoid useEffect for this case
-  }
+  // Stock search
+  const { data: searchResults, isLoading } = useStockSearch(search, search.length >= 1);
 
-  const { data: stocks, isFetching } = trpc.finance.searchStocks.useQuery(
-    { query: search },
-    { enabled: search.length > 0 }
-  );
-
-  const runCommand = useCallback((command: () => void) => {
+  const handleSelect = (item: { type: string; value: string }) => {
+    if (item.type === "stock") {
+      onStockSelect?.(item.value);
+    } else {
+      router.push(item.value);
+    }
     setOpen(false);
     setSearch("");
-    command();
-  }, []);
+  };
 
-  // Register global keyboard shortcut
-  if (typeof window !== "undefined") {
-    window.removeEventListener("keydown", handleKeyDown);
-    window.addEventListener("keydown", handleKeyDown);
-  }
+  // Filter nav items based on search
+  const filteredNavItems = search
+    ? navItems.filter((item) =>
+        item.label.toLowerCase().includes(search.toLowerCase())
+      )
+    : navItems;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setSearch(""); }}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-lg p-0">
         <DialogHeader className="sr-only">
           <DialogTitle>Command Palette</DialogTitle>
         </DialogHeader>
-        <div className="border-b p-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search stocks, navigate pages..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-              autoFocus
-            />
+        <div className="flex flex-col">
+          {/* Search Input */}
+          <div className="border-b p-4">
+            <div className="flex items-center gap-2">
+              <Search className="h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="Search stocks or navigate..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                autoFocus
+              />
+              <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                ESC
+              </kbd>
+            </div>
           </div>
-        </div>
-        <div className="max-h-[300px] overflow-y-auto p-2">
-          {search.length === 0 ? (
-            <div className="space-y-1">
-              <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+
+          {/* Results */}
+          <div className="max-h-[400px] overflow-y-auto p-2">
+            {/* Stock Results */}
+            {search.length >= 1 && (
+              <div className="mb-2">
+                <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                  Stocks
+                </div>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : searchResults && searchResults.length > 0 ? (
+                  searchResults.slice(0, 5).map((stock) => (
+                    <button
+                      key={stock.symbol}
+                      className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-accent"
+                      onClick={() =>
+                        handleSelect({ type: "stock", value: stock.symbol })
+                      }
+                    >
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex-1">
+                        <div className="font-medium">{stock.symbol}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {stock.name}
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        Stock
+                      </Badge>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                    No stocks found
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Navigation Items */}
+            <div>
+              <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
                 Navigation
               </div>
-              {navItems.map((item) => (
+              {filteredNavItems.map((item) => (
                 <button
-                  key={item.href}
-                  onClick={() => runCommand(() => router.push(item.href))}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm",
-                    "hover:bg-accent hover:text-accent-foreground"
-                  )}
+                  key={item.label}
+                  className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-accent"
+                  onClick={() =>
+                    handleSelect({ type: "nav", value: item.href })
+                  }
                 >
                   <item.icon className="h-4 w-4 text-muted-foreground" />
                   <span>{item.label}</span>
                 </button>
               ))}
             </div>
-          ) : (
-            <div className="space-y-1">
-              <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                Stocks
-              </div>
-              {isFetching ? (
-                <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-                  <Clock className="mx-auto mb-2 h-5 w-5 animate-pulse" />
-                  Searching...
-                </div>
-              ) : stocks && stocks.length > 0 ? (
-                stocks.slice(0, 8).map((stock) => (
-                  <button
-                    key={stock.symbol}
-                    onClick={() => runCommand(() => onStockSelect?.(stock.symbol))}
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-md px-3 py-2 text-sm",
-                      "hover:bg-accent hover:text-accent-foreground"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <span className="font-medium">{stock.symbol}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {stock.name}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={stock.changePercent >= 0 ? "success" : "destructive"}
-                        className="text-[10px]"
-                      >
-                        {stock.changePercent >= 0 ? "+" : ""}{stock.changePercent.toFixed(1)}%
-                      </Badge>
-                      <span className="font-medium">${stock.price.toFixed(2)}</span>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-                  No stocks found
-                </div>
-              )}
+          </div>
+
+          {/* Footer */}
+          <div className="border-t px-4 py-2 text-xs text-muted-foreground">
+            <div className="flex items-center justify-between">
+              <span>
+                <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">
+                  ⌘
+                </kbd>{" "}
+                +{" "}
+                <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">
+                  K
+                </kbd>{" "}
+                to toggle
+              </span>
+              <span>
+                <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">
+                  ↑↓
+                </kbd>{" "}
+                to navigate
+              </span>
             </div>
-          )}
-        </div>
-        <div className="border-t px-3 py-2 text-xs text-muted-foreground">
-          Press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">Esc</kbd> to close
+          </div>
         </div>
       </DialogContent>
     </Dialog>
