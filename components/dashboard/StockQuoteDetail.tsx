@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConnectionStatusIndicator, useConnectionStatus } from "@/components/ui/connection-status";
 import { useRealTimePrice } from "@/lib/hooks";
-import { useHistoricalData, type HistoricalDataPoint } from "@/lib/api";
+import { useHistoricalData, type HistoricalDataPoint } from "@/lib/solom-api";
 import { TrendingUp, TrendingDown, X, Loader2, LineChart as LineChartIcon, BarChart3 } from "lucide-react";
 import { CandlestickChart } from "@/components/charts/CandlestickChart";
 import { LineChart } from "@/components/charts/line-chart";

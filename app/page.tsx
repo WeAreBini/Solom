@@ -37,7 +37,7 @@ const features = [
     icon: Coins,
     title: "Cryptocurrency",
     description: "Track Bitcoin, Ethereum, and 1000+ altcoins with live prices, charts, and portfolio tools.",
-    badge: "Crypto",
+    badge: "Coming Soon",
     color: "text-orange-400",
     bgColor: "bg-orange-500/10",
   },
@@ -45,7 +45,7 @@ const features = [
     icon: Globe,
     title: "Forex Markets",
     description: "Major, minor, and exotic currency pairs with real-time rates and technical analysis.",
-    badge: "Forex",
+    badge: "Coming Soon",
     color: "text-blue-400",
     bgColor: "bg-blue-500/10",
   },
@@ -53,7 +53,7 @@ const features = [
     icon: BarChart3,
     title: "Market Indices",
     description: "S&P 500, NASDAQ, Dow Jones, and global indices with performance tracking and comparisons.",
-    badge: "Indices",
+    badge: "Live",
     color: "text-violet-400",
     bgColor: "bg-violet-500/10",
   },
@@ -269,16 +269,19 @@ export default function Home() {
           <CardContent>
             <div className="flex flex-wrap justify-center gap-4">
               {[
-                { icon: Landmark, label: "Stocks" },
-                { icon: Coins, label: "Cryptocurrency" },
-                { icon: Globe, label: "Forex" },
-                { icon: CandlestickChart, label: "Commodities" },
-                { icon: BarChart3, label: "Indices" },
-                { icon: DollarSign, label: "Bonds" },
+                { icon: Landmark, label: "Stocks", available: true },
+                { icon: BarChart3, label: "Indices", available: true },
+                { icon: Coins, label: "Cryptocurrency", available: false },
+                { icon: Globe, label: "Forex", available: false },
+                { icon: CandlestickChart, label: "Commodities", available: false },
+                { icon: DollarSign, label: "Bonds", available: false },
               ].map((asset) => (
-                <div key={asset.label} className="flex items-center gap-2 rounded-lg border bg-background px-4 py-2">
+                <div key={asset.label} className={`flex items-center gap-2 rounded-lg border bg-background px-4 py-2 ${!asset.available ? 'opacity-60' : ''}`}>
                   <asset.icon className="h-4 w-4 text-primary" />
                   <span className="font-medium">{asset.label}</span>
+                  {!asset.available && (
+                    <Badge variant="outline" className="text-xs ml-1">Soon</Badge>
+                  )}
                 </div>
               ))}
             </div>

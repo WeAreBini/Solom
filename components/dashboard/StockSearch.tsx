@@ -5,15 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useStockSearch } from "@/lib/api";
+import { useStockSearch } from "@/lib/solom-api";
 import { Search, TrendingUp, TrendingDown, Plus, Check, Loader2 } from "lucide-react";
 
 interface StockSearchProps {
   onAddToWatchlist?: (symbol: string) => void;
   watchlistSymbols?: Set<string>;
+  onStockSelect?: (symbol: string) => void;
 }
 
-export function StockSearch({ onAddToWatchlist, watchlistSymbols = new Set() }: StockSearchProps) {
+export function StockSearch({ onAddToWatchlist, watchlistSymbols = new Set(), onStockSelect }: StockSearchProps) {
   const [query, setQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -88,6 +89,7 @@ export function StockSearch({ onAddToWatchlist, watchlistSymbols = new Set() }: 
                   stock={stock}
                   isInWatchlist={watchlistSymbols.has(stock.symbol)}
                   onAddToWatchlist={handleAddToWatchlist}
+                  onStockSelect={onStockSelect}
                 />
               ))
             )}
@@ -111,9 +113,10 @@ interface StockSearchResultProps {
   };
   isInWatchlist: boolean;
   onAddToWatchlist: (symbol: string) => void;
+  onStockSelect?: (symbol: string) => void;
 }
 
-function StockSearchResult({ stock, isInWatchlist, onAddToWatchlist }: StockSearchResultProps) {
+function StockSearchResult({ stock, isInWatchlist, onAddToWatchlist, onStockSelect }: StockSearchResultProps) {
   const isPositive = stock.change >= 0;
 
   const formatMarketCap = (cap: number) => {
@@ -124,7 +127,9 @@ function StockSearchResult({ stock, isInWatchlist, onAddToWatchlist }: StockSear
   };
 
   return (
-    <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3 transition-colors hover:bg-muted/50">
+    <div className="group flex items-center justify-between rounded-lg border bg-card/50 p-3 transition-all hover:bg-accent/50 hover:shadow-sm cursor-pointer"
+      onClick={() => onStockSelect?.(stock.symbol)}
+    >
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <span className="font-semibold">{stock.symbol}</span>
@@ -147,7 +152,10 @@ function StockSearchResult({ stock, isInWatchlist, onAddToWatchlist }: StockSear
       <Button
         variant={isInWatchlist ? "secondary" : "outline"}
         size="sm"
-        onClick={() => onAddToWatchlist(stock.symbol)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAddToWatchlist(stock.symbol);
+        }}
         disabled={isInWatchlist}
       >
         {isInWatchlist ? (

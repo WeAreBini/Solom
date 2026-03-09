@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getMarketIndices } from '@/lib/fmp';
+import { getMarketIndices, isFMPConfigured } from '@/lib/fmp';
 import type { MarketIndex } from '@/lib/types/stock';
 
 export const dynamic = 'force-dynamic';
@@ -9,11 +9,13 @@ interface IndicesResponse {
   data?: MarketIndex[];
   error?: string;
   count: number;
+  demo?: boolean;
 }
 
 export async function GET(): Promise<NextResponse<IndicesResponse>> {
   try {
     const indices = await getMarketIndices();
+    const isDemo = !isFMPConfigured();
 
     return NextResponse.json({
       success: true,
@@ -25,23 +27,12 @@ export async function GET(): Promise<NextResponse<IndicesResponse>> {
         changesPercentage: idx.changesPercentage,
       })),
       count: indices.length,
+      demo: isDemo,
     });
   } catch (error) {
     console.error('Market indices error:', error);
     
     const message = error instanceof Error ? error.message : 'Unknown error occurred';
-    
-    // Check for FMP API key error
-    if (message.includes('FMP_API_KEY')) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Server configuration error: FMP API key not configured',
-          count: 0,
-        },
-        { status: 500 }
-      );
-    }
 
     return NextResponse.json(
       {
