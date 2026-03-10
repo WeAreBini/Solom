@@ -37,6 +37,26 @@ python3 /data/workspace/.openclaw/memory-maintenance.py maintenance
 - Applies confidence decay to old memories
 - Cleans up stale, low-confidence memories
 
+## DevOps Build Check (Critical!)
+
+**Run this EVERY heartbeat:**
+
+```bash
+# Check all Railway projects and create issues on failure
+bash /data/workspace/devops-heartbeat.sh
+```
+
+This script:
+1. Checks Railway deployment status for all projects
+2. Verifies health endpoints
+3. Creates Paperclip issues on build failure
+4. Reports status to stdout
+
+**If build fails:**
+- Script creates Paperclip issue automatically
+- Issue title: "[URGENT] {project} Build Failed"
+- Priority: critical
+
 ## Project Monitoring
 **Channel:** #solom-updates (ID: 1476087902923395145)
 - Check Command Bridge status
