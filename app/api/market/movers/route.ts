@@ -1,113 +1,73 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getMarketMovers, isFMPConfigured } from '@/lib/fmp';
-import type { MarketMover } from '@/lib/types/stock';
-import { parseLimitParam } from '@/lib/api-utils';
+import { NextResponse } from 'next/server';
+
+// Solom Data Service URL
+const DATA_SERVICE_URL = process.env.SOLOM_DATA_SERVICE_URL || 'http://localhost:8080';
 
 export const dynamic = 'force-dynamic';
 
-interface MoversResponse {
+interface MoverResponse {
   success: boolean;
   data?: {
     gainers: MarketMover[];
     losers: MarketMover[];
   };
   error?: string;
-  gainersCount: number;
-  losersCount: number;
-  demo?: boolean;
+  source?: string;
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse<MoversResponse>> {
+interface MarketMover {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changesPercentage: number;
+  volume: number;
+  marketCap?: number;
+}
+
+export async function GET(): Promise<NextResponse<MoverResponse>> {
   try {
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type'); // 'gainers', 'losers', or null for both
-    const limitParam = searchParams.get('limit');
-    const limit = parseLimitParam(limitParam);
-
-    if (limit === null) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Limit must be a valid number between 1 and 50',
-          gainersCount: 0,
-          losersCount: 0,
-        },
-        { status: 400 }
-      );
-    }
-
-    if (limit > 50) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Limit must be between 1 and 50',
-          gainersCount: 0,
-          losersCount: 0,
-        },
-        { status: 400 }
-      );
-    }
-
-    const movers = await getMarketMovers();
-    const isDemo = !isFMPConfigured();
-
-    // Filter by type if specified
-    let gainers = movers.gainers.slice(0, limit);
-    let losers = movers.losers.slice(0, limit);
-
-    if (type === 'gainers') {
-      losers = [];
-    } else if (type === 'losers') {
-      gainers = [];
-    }
-
-    // Return movers data with consistent field names
-    const mapMover = (m: MarketMover) => ({
-      symbol: m.symbol,
-      name: m.name,
-      price: m.price,
-      change: m.change,
-      changesPercentage: m.changesPercentage,
-      dayLow: m.dayLow,
-      dayHigh: m.dayHigh,
-      yearHigh: m.yearHigh,
-      yearLow: m.yearLow,
-      marketCap: m.marketCap,
-      volume: m.volume,
-      avgVolume: m.avgVolume,
-      exchange: m.exchange,
-      open: m.open,
-      previousClose: m.previousClose,
-      eps: m.eps,
-      pe: m.pe,
-      earningsAnnouncement: m.earningsAnnouncement,
-      sharesOutstanding: m.sharesOutstanding,
-      timestamp: m.timestamp,
+    // Call our data service which uses Yahoo Finance
+    const response = await fetch(`${DATA_SERVICE_URL}/api/market/movers`, {
+      headers: {
+        'Accept': 'application/json',
+      },
     });
+
+    if (!response.ok) {
+      throw new Error(`Data service error: ${response.status}`);
+    }
+
+    const data = await response.json();
 
     return NextResponse.json({
       success: true,
-      data: {
-        gainers: gainers.map(mapMover),
-        losers: losers.map(mapMover),
-      },
-      gainersCount: gainers.length,
-      losersCount: losers.length,
-      demo: isDemo,
+      data: data.data,
+      source: 'yfinance',
     });
   } catch (error) {
     console.error('Market movers error:', error);
-    
-    const message = error instanceof Error ? error.message : 'Unknown error occurred';
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: message,
-        gainersCount: 0,
-        losersCount: 0,
+    // Fallback mock data
+    const mockGainers: MarketMover[] = [
+      { symbol: 'NVDA', name: 'NVIDIA Corporation', price: 892.34, change: 45.67, changesPercentage: 5.39, volume: 45890000 },
+      { symbol: 'AMD', name: 'Advanced Micro Devices', price: 178.45, change: 12.34, changesPercentage: 7.43, volume: 32450000 },
+      { symbol: 'META', name: 'Meta Platforms Inc.', price: 505.12, change: 8.45, changesPercentage: 1.70, volume: 15670000 },
+    ];
+
+    const mockLosers: MarketMover[] = [
+      { symbol: 'TSLA', name: 'Tesla Inc.', price: 245.67, change: -3.21, changesPercentage: -1.29, volume: 89230000 },
+      { symbol: 'PYPL', name: 'PayPal Holdings', price: 62.34, change: -4.56, changesPercentage: -6.82, volume: 12450000 },
+    ];
+
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Data service unavailable',
+      data: {
+        gainers: mockGainers,
+        losers: mockLosers,
       },
-      { status: 500 }
-    );
+      source: 'fallback',
+    });
   }
 }

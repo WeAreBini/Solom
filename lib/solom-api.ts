@@ -2,8 +2,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-// Solom API Base URL - configurable via environment variable
-const SOLOM_API_URL = process.env.NEXT_PUBLIC_SOLOM_API_URL || 'https://solom-api-production.up.railway.app';
+// Solom Data Service URL - configurable via environment variable
+// This connects to the Python/FastAPI service that fetches data from Yahoo Finance
+const SOLOM_DATA_SERVICE_URL = process.env.NEXT_PUBLIC_SOLOM_DATA_SERVICE_URL || 'https://solom-data-service.up.railway.app';
 
 // Types (matching frontend expectations)
 export interface MarketIndex {
