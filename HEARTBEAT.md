@@ -67,6 +67,27 @@ Expected output: JSON with status for each project.
 
 **Token renewal:** See `/data/workspace/docs/RAILWAY_MONITORING.md`
 
+## Railway Build Failure Detection
+
+DevOps agent should check for build failures and create issues:
+
+```bash
+python3 /data/workspace/railway-build-monitor.py --create-issue-on-fail
+```
+
+**When build fails (status = FAILED):**
+1. Create Paperclip issue with title "[URGENT] {project} Build Failed"
+2. Include: build logs URL, previous version still active note
+3. Priority: critical
+4. Label: deployment-failed
+
+**When health check fails:**
+1. Create Paperclip issue: "{project} Health Check Failed"
+2. Include: service URL, status code
+3. Priority: high
+
+This runs during DevOps agent heartbeat automatically.
+
 ## Memory Consolidation
 - Use `recall.py` for semantic search across pgvector
 - Append new insights to `memory/YYYY-MM-DD.md`
