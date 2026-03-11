@@ -70,7 +70,8 @@ export default function StockDashboardPage() {
   const connectionStatus = useConnectionStatus();
 
   const requestedSymbol = searchParams.get("symbol")?.toUpperCase() ?? null;
-  const visibleSelectedStock = selectedStock ?? requestedSymbol;
+  // @ai-context: Command-palette URL navigation must override stale local selection.
+  const visibleSelectedStock = requestedSymbol ?? selectedStock;
   const visibleActiveTab = requestedSymbol ? "search" : activeTab;
 
   useEffect(() => {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Badge, badgeVariants } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IdeaCard, IdeaCardSkeleton } from "@/components/social/IdeaCard";
 import { useFeed, useCreateIdea, useToggleLike, useToggleBookmark } from "@/lib/hooks/use-social";
 import type { FeedType, Timeframe, TradeDirection, Visibility } from "@/lib/types/social";
+import { cn } from "@/lib/utils";
 import {
   Plus,
   TrendingUp,
@@ -124,15 +125,6 @@ export default function SocialPage() {
                     onBookmark={() => toggleBookmark.mutate({ ideaId: idea.id, isBookmarked: idea.isBookmarked })}
                   />
                 ))}
-                {data?.hasMore && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {}}
-                  >
-                    Load More
-                  </Button>
-                )}
               </div>
             )}
           </div>
@@ -167,15 +159,20 @@ export default function SocialPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
+                  {/* @ai-context: Use native buttons so ticker filters are fully keyboard operable. */}
                   {['NVDA', 'TSLA', 'AAPL', 'META', 'AMZN', 'GOOGL', 'MSFT', 'AMD'].map((ticker) => (
-                    <Badge
+                    <button
+                      type="button"
                       key={ticker}
-                      variant={tickerFilter === ticker ? 'default' : 'secondary'}
-                      className="cursor-pointer font-mono"
+                      aria-pressed={tickerFilter === ticker}
+                      className={cn(
+                        badgeVariants({ variant: tickerFilter === ticker ? 'default' : 'secondary' }),
+                        'font-mono'
+                      )}
                       onClick={() => setTickerFilter(tickerFilter === ticker ? '' : ticker)}
                     >
                       ${ticker}
-                    </Badge>
+                    </button>
                   ))}
                 </div>
               </CardContent>
