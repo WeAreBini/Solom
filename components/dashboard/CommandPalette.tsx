@@ -59,7 +59,11 @@ export function CommandPalette({ onStockSelect }: CommandPaletteProps) {
 
   const handleSelect = (item: { type: string; value: string }) => {
     if (item.type === "stock") {
-      onStockSelect?.(item.value);
+      if (onStockSelect) {
+        onStockSelect(item.value);
+      } else {
+        router.push(`/dashboard/stocks?symbol=${encodeURIComponent(item.value)}`);
+      }
     } else {
       router.push(item.value);
     }
@@ -83,10 +87,15 @@ export function CommandPalette({ onStockSelect }: CommandPaletteProps) {
         <div className="flex flex-col">
           {/* Search Input */}
           <div className="border-b p-4">
+            <label htmlFor="dashboard-command-palette-search" className="sr-only">
+              Search stocks or dashboard destinations
+            </label>
             <div className="flex items-center gap-2">
               <Search className="h-5 w-5 text-muted-foreground" />
               <Input
+                id="dashboard-command-palette-search"
                 placeholder="Search stocks or navigate..."
+                aria-label="Search stocks or dashboard destinations"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -174,9 +183,9 @@ export function CommandPalette({ onStockSelect }: CommandPaletteProps) {
               </span>
               <span>
                 <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">
-                  ↑↓
+                  ESC
                 </kbd>{" "}
-                to navigate
+                to close
               </span>
             </div>
           </div>

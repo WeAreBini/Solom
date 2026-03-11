@@ -1,27 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ConnectionStatusIndicator } from "@/components/ui/connection-status";
-import { useConnectionStatus } from "@/components/ui/connection-status";
 import { KPIGrid } from "@/components/dashboard/kpi-card";
 import { PriceLineChart, LineChart } from "@/components/charts/line-chart";
 import { useMarketIndices } from "@/lib/solom-api";
 import { chartColors } from "@/lib/design-tokens";
 import { useHistoricalData } from "@/hooks/use-real-time-data";
-import { Sparkles, TrendingUp, TrendingDown, Activity, DollarSign, Percent, BarChart3, RefreshCw, ExternalLink, ArrowUpRight, Zap, Clock } from "lucide-react";
+import { TrendingUp, TrendingDown, Activity, DollarSign, Percent, BarChart3, RefreshCw, ArrowUpRight, Zap, Clock } from "lucide-react";
 
 export default function FinanceDashboardPage() {
-  const [mounted, setMounted] = useState(false);
-  const connectionStatus = useConnectionStatus();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const { data: indices, isLoading, error, refetch } = useMarketIndices();
 
   const sparklineData = {
@@ -52,33 +42,28 @@ export default function FinanceDashboardPage() {
     }));
   }, [indices, sparklineData.sp500, sparklineData.nasdaq, sparklineData.dow]);
 
-  if (!mounted) {
-    return null;
-  }
+  const priceHistoryData = useMemo(
+    () =>
+      sparklineData.sp500.map((value: number, index: number) => ({
+        date: new Date(Date.UTC(2026, 0, 1, index)).toISOString(),
+        price: value,
+        volume: 650000000 + index * 15000000,
+      })),
+    [sparklineData.sp500]
+  );
+
+  const comparisonData = useMemo(
+    () =>
+      Array.from({ length: 24 }, (_, i) => ({
+        time: `${i}:00`,
+        sp500: 4500 + Math.sin(i * 0.5) * 50 + i * 3,
+        nasdaq: 14000 + Math.cos(i * 0.3) * 100 + i * 5,
+      })),
+    []
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <span className="text-xl font-bold">Solom</span>
-            <Badge variant="secondary" className="ml-2">Finance Dashboard</Badge>
-          </Link>
-          <nav className="flex items-center gap-2">
-            <ConnectionStatusIndicator 
-              status={connectionStatus.status}
-              showLabel={false}
-            />
-            <Button variant="ghost" size="sm" asChild><Link href="/dashboard">Classic View</Link></Button>
-            <Button variant="outline" size="sm" asChild><Link href="/" target="_blank"><ExternalLink className="mr-2 h-4 w-4" />API Docs</Link></Button>
-          </nav>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
+    <div className="space-y-12 bg-gradient-to-b from-background via-background to-muted/20">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Finance Dashboard</h1>
           <p className="mt-2 text-muted-foreground">Real-time market insights with KPI cards and visualizations</p>
@@ -120,11 +105,7 @@ export default function FinanceDashboardPage() {
               <CardContent>
                 {sparklineData.sp500.length > 0 && (
                   <PriceLineChart
-                    data={sparklineData.sp500.map((value: number, index: number) => ({
-                      date: new Date(Date.now() - (48 - index) * 3600000).toISOString(),
-                      price: value,
-                      volume: Math.random() * 1000000000 + 500000000,
-                    }))}
+                    data={priceHistoryData}
                     height={250}
                     showVolume
                     color="neutral"
@@ -137,11 +118,7 @@ export default function FinanceDashboardPage() {
               <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5" />Multi-Index Comparison</CardTitle></CardHeader>
               <CardContent>
                 <LineChart
-                  data={Array.from({ length: 24 }, (_, i) => ({
-                    time: `${i}:00`,
-                    sp500: 4500 + Math.sin(i * 0.5) * 50 + Math.random() * 20,
-                    nasdaq: 14000 + Math.cos(i * 0.3) * 100 + Math.random() * 50,
-                  }))}
+                  data={comparisonData}
                   xKey="time"
                   yKeys={["sp500", "nasdaq"]}
                   height={200}
@@ -203,11 +180,6 @@ export default function FinanceDashboardPage() {
             <Badge variant="secondary">TanStack Query</Badge>
           </div>
         </section>
-      </main>
-
-      <footer className="border-t py-8">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground"><p>© 2026 Solom. Built with ❤️ by WeAreBini</p></div>
-      </footer>
     </div>
   );
 }

@@ -1,43 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ConnectionStatusIndicator } from "@/components/ui/connection-status";
-import { useConnectionStatus } from "@/components/ui/connection-status";
 import { IdeaCard, IdeaCardSkeleton } from "@/components/social/IdeaCard";
 import { useFeed, useCreateIdea, useToggleLike, useToggleBookmark } from "@/lib/hooks/use-social";
 import type { FeedType, Timeframe, TradeDirection, Visibility } from "@/lib/types/social";
 import {
-  Sparkles,
   Plus,
   TrendingUp,
   Users,
   Zap,
-  Bell,
   Search,
   RefreshCw,
-  ExternalLink,
   X,
 } from "lucide-react";
-
-// Simple icons as components
-const CheckIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-  </svg>
-);
 
 export default function SocialPage() {
   const [feedType, setFeedType] = useState<FeedType>('trending');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [tickerFilter, setTickerFilter] = useState<string>('');
-  const connectionStatus = useConnectionStatus();
 
   const { data, isLoading, refetch, isFetching } = useFeed(feedType, tickerFilter || undefined);
   const createIdea = useCreateIdea();
@@ -47,41 +33,7 @@ export default function SocialPage() {
   const ideas = data?.ideas ?? [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <span className="text-xl font-bold">Solom</span>
-            <Badge variant="secondary" className="ml-2">
-              Social
-            </Badge>
-          </Link>
-          <nav className="flex items-center gap-2">
-            <ConnectionStatusIndicator 
-              status={connectionStatus.status}
-              showLabel={false}
-            />
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard">
-                Markets
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" className="relative">
-              <Bell className="h-4 w-4" />
-              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center">
-                3
-              </span>
-            </Button>
-          </nav>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+    <div className="space-y-8 bg-gradient-to-b from-background via-background to-muted/20">
         {/* Title Section */}
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -271,7 +223,6 @@ export default function SocialPage() {
             </Card>
           </div>
         </div>
-      </main>
 
       {/* Create Idea Modal */}
       {showCreateModal && (
@@ -288,13 +239,6 @@ export default function SocialPage() {
           isLoading={createIdea.isPending}
         />
       )}
-
-      {/* Footer */}
-      <footer className="border-t py-8">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2026 Solom. Built with ❤️ by WeAreBini</p>
-        </div>
-      </footer>
     </div>
   );
 }

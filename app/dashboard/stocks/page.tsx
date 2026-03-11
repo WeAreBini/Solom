@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import Link from "next/link";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ConnectionStatusIndicator } from "@/components/ui/connection-status";
 import { useConnectionStatus } from "@/components/ui/connection-status";
 import {
   MarketOverview,
@@ -16,23 +15,16 @@ import {
   StockQuoteDetail,
   PriceAlerts,
   AlertNotifications,
-  KPICard,
-  KPIGrid,
 } from "@/components/dashboard";
 import { useWatchlist, useWatchlistMutations, useAlerts } from "@/lib/hooks/use-alerts";
 import { useMarketIndices, useMarketMovers } from "@/lib/solom-api";
-import { useRealTimePrices } from "@/lib/hooks";
 import {
   Sparkles,
   Search,
   TrendingUp,
   Activity,
   RefreshCw,
-  ExternalLink,
   Bell,
-  Star,
-  LineChart,
-  ChevronRight,
   Clock,
   Zap,
 } from "lucide-react";
@@ -41,68 +33,70 @@ import {
 const LOCAL_WATCHLIST_KEY = "solom_watchlist_v2";
 
 export default function StockDashboardPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   // State
-  const [mounted, setMounted] = useState(false);
   const [selectedStock, setSelectedStock] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("search");
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [showNotifications, setShowNotifications] = useState(false);
   
   // Use local storage for watchlist as fallback
-  const [localWatchlist, setLocalWatchlist] = useState<string[]>([]);
-  const initializedRef = useRef(false);
+  const [localWatchlist, setLocalWatchlist] = useState<string[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+
+    try {
+      const saved = window.localStorage.getItem(LOCAL_WATCHLIST_KEY);
+      return saved ? (JSON.parse(saved) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
 
   // Database-backed watchlist (when connected)
-  const { watchlist: dbWatchlist, isLoading: watchlistLoading } = useWatchlist();
+  const { watchlist: dbWatchlist } = useWatchlist();
   const { addToWatchlist: addToDbWatchlist, removeFromWatchlist: removeFromDbWatchlist } = useWatchlistMutations();
 
   // Alerts
-  const { alerts, triggeredAlerts, activeAlerts } = useAlerts();
+  const { triggeredAlerts, activeAlerts } = useAlerts();
 
   // API hooks
-  const { data: indices, isLoading: indicesLoading, error: indicesError, refetch: refetchIndices } = useMarketIndices();
+  const { error: indicesError, refetch: refetchIndices } = useMarketIndices();
   const { refetch: refetchMovers } = useMarketMovers();
 
   // Connection status
   const connectionStatus = useConnectionStatus();
 
-  // Real-time prices for watchlist
-  const watchlistSymbols = mounted 
-    ? (dbWatchlist.length > 0 
-        ? dbWatchlist.map(w => w.symbol) 
-        : localWatchlist)
-    : [];
-
-  // Initialize
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Local storage backup for watchlist
-  useEffect(() => {
-    if (!mounted) return;
-    
-    if (!initializedRef.current) {
-      initializedRef.current = true;
-      try {
-        const saved = localStorage.getItem(LOCAL_WATCHLIST_KEY);
-        if (saved) {
-          setLocalWatchlist(JSON.parse(saved));
-        }
-      } catch {
-        // Ignore errors
-      }
-    }
-  }, [mounted]);
+  const requestedSymbol = searchParams.get("symbol")?.toUpperCase() ?? null;
+  const visibleSelectedStock = selectedStock ?? requestedSymbol;
+  const visibleActiveTab = requestedSymbol ? "search" : activeTab;
 
   useEffect(() => {
-    if (!mounted || localWatchlist.length === 0) return;
+    if (localWatchlist.length === 0) return;
     try {
       localStorage.setItem(LOCAL_WATCHLIST_KEY, JSON.stringify(localWatchlist));
     } catch {
       // Ignore errors
     }
-  }, [localWatchlist, mounted]);
+  }, [localWatchlist]);
+
+  const handleStockSelect = useCallback((symbol: string) => {
+    if (requestedSymbol) {
+      router.replace("/dashboard/stocks", { scroll: false });
+    }
+
+    setSelectedStock(symbol);
+  }, [requestedSymbol, router]);
+
+  const handleStockDetailClose = useCallback(() => {
+    if (requestedSymbol) {
+      router.replace("/dashboard/stocks", { scroll: false });
+    }
+
+    setSelectedStock(null);
+  }, [requestedSymbol, router]);
 
   // Add to watchlist (with database fallback)
   const addToWatchlist = useCallback(async (symbol: string) => {
@@ -167,62 +161,13 @@ export default function StockDashboardPage() {
     return () => clearInterval(interval);
   }, [handleRefresh]);
 
-  if (!mounted) {
-    return null;
-  }
-
   // Use database watchlist if available, otherwise use local storage
   const watchlist = dbWatchlist.length > 0 
     ? dbWatchlist.map(w => w.symbol)
     : localWatchlist;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <span className="text-xl font-bold">Solom</span>
-            <Badge variant="secondary" className="ml-2">
-              <LineChart className="mr-1 h-3 w-3" />
-              Market Dashboard
-            </Badge>
-          </Link>
-          <nav className="flex items-center gap-2">
-            <ConnectionStatusIndicator 
-              status={connectionStatus.status}
-              showLabel={false}
-            />
-            {triggeredAlerts.length > 0 && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="relative"
-                onClick={() => setShowNotifications(!showNotifications)}
-              >
-                <Bell className="h-4 w-4" />
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                  {triggeredAlerts.length}
-                </span>
-              </Button>
-            )}
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard">Classic View</Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/" target="_blank">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                API Docs
-              </Link>
-            </Button>
-          </nav>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-6">
+    <div className="space-y-10 bg-gradient-to-b from-background via-background to-muted/20">
         {/* Title Section with Auto-refresh Status */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -246,6 +191,20 @@ export default function StockDashboardPage() {
                 <RefreshCw className="h-3.5 w-3.5" />
               </Button>
             </div>
+            {triggeredAlerts.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="relative"
+                onClick={() => setShowNotifications((current) => !current)}
+              >
+                <Bell className="mr-2 h-4 w-4" />
+                Alerts
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                  {triggeredAlerts.length}
+                </span>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -295,7 +254,7 @@ export default function StockDashboardPage() {
           {/* Left/Center - Main Content */}
           <div className="space-y-6 lg:col-span-2">
             {/* Tabs: Search & Market Movers */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs value={visibleActiveTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="search" className="flex items-center gap-2">
                   <Search className="h-4 w-4" />
@@ -311,6 +270,7 @@ export default function StockDashboardPage() {
                 <StockSearch
                   onAddToWatchlist={addToWatchlist}
                   watchlistSymbols={new Set(watchlist)}
+                  onStockSelect={handleStockSelect}
                 />
               </TabsContent>
 
@@ -320,21 +280,21 @@ export default function StockDashboardPage() {
             </Tabs>
 
             {/* Selected Stock Detail with Price Alerts */}
-            {selectedStock && (
+            {visibleSelectedStock && (
               <div className="space-y-4">
                 <StockQuoteDetail
-                  symbol={selectedStock}
-                  onClose={() => setSelectedStock(null)}
+                  symbol={visibleSelectedStock}
+                  onClose={handleStockDetailClose}
                 />
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Bell className="h-4 w-4" />
-                      Price Alerts for {selectedStock}
+                      Price Alerts for {visibleSelectedStock}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <PriceAlerts symbol={selectedStock} />
+                    <PriceAlerts symbol={visibleSelectedStock} />
                   </CardContent>
                 </Card>
               </div>
@@ -368,7 +328,7 @@ export default function StockDashboardPage() {
                       <button
                         key={alert.id}
                         className="w-full rounded-lg border bg-card/50 p-2 text-left text-sm transition-colors hover:bg-muted/50"
-                        onClick={() => setSelectedStock(alert.symbol)}
+                        onClick={() => handleStockSelect(alert.symbol)}
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-medium">{alert.symbol}</span>
@@ -431,15 +391,6 @@ export default function StockDashboardPage() {
             <Badge variant="secondary">Prisma</Badge>
           </div>
         </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t py-6">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2026 Solom. Built with ❤️ by WeAreBini</p>
-          <p className="mt-1 text-xs">Real-time stock prices with 30-second auto-refresh fallback</p>
-        </div>
-      </footer>
     </div>
   );
 }
