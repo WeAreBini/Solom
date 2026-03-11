@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GainLossBadge } from '@/components/finance/GainLossBadge';
@@ -15,9 +15,10 @@ import { AssetAllocationChart } from '@/components/finance/AssetAllocationChart'
 import { PortfolioSummary } from '@/components/dashboard/PortfolioSummary';
 import { WatchlistWidget } from '@/components/watchlist/WatchlistWidget';
 import { AIInsightsWidget } from '@/components/dashboard/AIInsightsWidget';
+import { SectionCoverageGrid } from '@/components/overview/SectionCoverageGrid';
 import { getMarketActives, getQuotes, getMarketNews, getHistoricalPrices } from '@/app/actions/fmp';
 import { createClient } from '@/lib/supabase/server';
-import { Search, ArrowRight } from 'lucide-react';
+import { Search, ArrowRight, BriefcaseBusiness, Globe2, Wallet } from 'lucide-react';
 
 /**
  * @ai-context Dashboard page — portfolio overview, market summary, and real news.
@@ -32,8 +33,8 @@ export default async function DashboardPage() {
   // ─── Portfolio data ──────────────────────────────────────────────────
   let portfolioItems: Array<{
     symbol: string;
-    price_purchased: number;
-    amount_of_shares: number;
+    average_price: number;
+    quantity: number;
   }> = [];
   let totalInvested = 0;
   let currentValue = 0;
@@ -56,7 +57,7 @@ export default async function DashboardPage() {
 
     if (portfolioItems.length > 0) {
       totalInvested = portfolioItems.reduce(
-        (sum, p) => sum + p.price_purchased * p.amount_of_shares, 0
+        (sum, p) => sum + p.average_price * p.quantity, 0
       );
 
       const symbols = [...new Set(portfolioItems.map((p) => p.symbol))];
@@ -90,10 +91,10 @@ export default async function DashboardPage() {
           const symbolIndex = symbols.indexOf(item.symbol);
           const data = historicalDataResults[symbolIndex];
           if (data && data[i]) {
-            dailyValue += data[i].close * item.amount_of_shares;
+            dailyValue += data[i].close * item.quantity;
             if (!date) date = data[i].date;
           } else {
-            dailyValue += item.price_purchased * item.amount_of_shares;
+            dailyValue += item.average_price * item.quantity;
           }
         });
         
@@ -105,7 +106,7 @@ export default async function DashboardPage() {
 
       currentValue = portfolioItems.reduce((sum, p) => {
         const q = quotesMap[p.symbol];
-        return sum + ((q?.price ?? p.price_purchased) * p.amount_of_shares);
+        return sum + ((q?.price ?? p.average_price) * p.quantity);
       }, 0);
 
       totalReturn = currentValue - totalInvested;
@@ -148,10 +149,10 @@ export default async function DashboardPage() {
   const allocationData = portfolioItems.length > 0 
     ? portfolioItems.map(item => {
         const quote = quotesMap[item.symbol];
-        const livePrice = quote?.price ?? item.price_purchased;
+        const livePrice = quote?.price ?? item.average_price;
         return {
           name: item.symbol,
-          value: livePrice * item.amount_of_shares
+          value: livePrice * item.quantity
         };
       }).sort((a, b) => b.value - a.value).slice(0, 5) // Top 5
     : [
@@ -167,6 +168,27 @@ export default async function DashboardPage() {
     sparklineData: sparklineDataMap[stock.symbol] || [],
   }));
 
+  const overviewMetrics = [
+    {
+      label: 'Positions',
+      value: `${portfolioItems.length}`,
+      detail: isEmpty ? 'portfolio not started' : 'holdings tracked',
+      icon: Wallet,
+    },
+    {
+      label: 'Market leaders',
+      value: `${marketSummary.length}`,
+      detail: 'cross-market names monitored',
+      icon: Globe2,
+    },
+    {
+      label: 'Headlines',
+      value: `${news.length}`,
+      detail: 'news items in the feed',
+      icon: BriefcaseBusiness,
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       {/* Market Indices Strip */}
@@ -175,9 +197,60 @@ export default async function DashboardPage() {
       </Suspense>
 
       <div className="flex flex-col gap-6 p-4 md:p-8">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Command Center</h1>
-          <p className="text-muted-foreground">Welcome back! Here&apos;s an overview of your portfolio.</p>
+        <div className="grid gap-6 xl:grid-cols-12">
+          <Card className="glass-card xl:col-span-8">
+            <CardContent className="flex flex-col gap-5 p-5 md:p-6">
+              <div className="flex flex-col gap-2">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                  Portfolio overview
+                </p>
+                <h1 className="text-3xl font-bold tracking-tight">Command Center</h1>
+                <p className="text-muted-foreground">
+                  Portfolio monitoring now sits inside the broader market, macro, flows,
+                  and digital-assets shell.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                {overviewMetrics.map((metric) => (
+                  <div
+                    key={metric.label}
+                    className="rounded-xl border border-border/60 bg-background/70 px-4 py-4"
+                  >
+                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                      <metric.icon className="h-3.5 w-3.5" />
+                      {metric.label}
+                    </div>
+                    <p className="mt-3 text-2xl font-semibold tracking-tight">{metric.value}</p>
+                    <p className="text-xs text-muted-foreground">{metric.detail}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Button asChild>
+                  <Link href="/trade">
+                    Open Simulator <ArrowRight className="ml-1 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/economic">Review Macro</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card xl:col-span-4">
+            <CardHeader className="border-b border-border/60 bg-muted/10">
+              <h2 className="text-lg font-semibold tracking-tight">Coverage Map</h2>
+              <p className="text-sm text-muted-foreground">
+                Fast access to the six primary sections of the product.
+              </p>
+            </CardHeader>
+            <CardContent className="p-4">
+              <SectionCoverageGrid variant="compact" />
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-12">
@@ -249,9 +322,9 @@ export default async function DashboardPage() {
                       <tbody className="divide-y">
                         {portfolioItems.map((item) => {
                           const quote = quotesMap[item.symbol];
-                          const livePrice = quote?.price ?? item.price_purchased;
-                          const positionValue = livePrice * item.amount_of_shares;
-                          const positionCost = item.price_purchased * item.amount_of_shares;
+                          const livePrice = quote?.price ?? item.average_price;
+                          const positionValue = livePrice * item.quantity;
+                          const positionCost = item.average_price * item.quantity;
                           const positionReturnPct =
                             positionCost > 0
                               ? ((positionValue - positionCost) / positionCost) * 100
@@ -268,9 +341,9 @@ export default async function DashboardPage() {
                                 {quote?.name ?? item.symbol}
                               </td>
                               <td className="px-4 py-3 text-right tabular-nums">
-                                {item.amount_of_shares.toLocaleString()}
+                                {item.quantity.toLocaleString()}
                               </td>
-                              <td className="px-4 py-3 text-right tabular-nums">${fmt(item.price_purchased)}</td>
+                              <td className="px-4 py-3 text-right tabular-nums">${fmt(item.average_price)}</td>
                               <td className="px-4 py-3 text-right tabular-nums">${fmt(livePrice)}</td>
                               <td className="px-4 py-3 text-right tabular-nums font-medium">${fmt(positionValue)}</td>
                               <td className="px-4 py-3 text-right">

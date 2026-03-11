@@ -1,10 +1,11 @@
 "use client";
 
 /**
- * @ai-context Collapsible right sidebar for persistent real-time data (Watchlists, Alerts).
- * Hidden on mobile.
- * @ai-related components/layout/AppShell.tsx
+ * @ai-context Collapsible right rail for coverage links, watchlist snapshots, and live market news.
+ * Hidden on mobile to preserve primary content density.
+ * @ai-related components/layout/AppShell.tsx, lib/navigation.ts
  */
+import Link from "next/link";
 import { useState } from "react";
 import {
   ChevronRight,
@@ -19,10 +20,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuotes, useMarketNews } from "@/hooks/use-fmp";
+import { primarySections } from "@/lib/navigation";
 
 export function RightPanel() {
   const [collapsed, setCollapsed] = useState(false);
-  const { data: watchlistData, isLoading, isError } = useQuotes(["AAPL", "MSFT", "NVDA", "TSLA", "SPY"]);
+  const { data: watchlistData, isLoading, isError } = useQuotes([
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "TSLA",
+    "SPY",
+  ]);
   const { data: newsData, isLoading: isNewsLoading, isError: isNewsError } = useMarketNews();
 
   return (
@@ -57,7 +65,45 @@ export function RightPanel() {
       {!collapsed && (
         <ScrollArea className="flex-1">
           <div className="p-4 flex flex-col gap-6">
-            {/* Watchlist Section */}
+            <section>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+                    Coverage
+                  </p>
+                  <h2 className="text-sm font-medium">Product Surface Map</h2>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                {primarySections.map((section) => (
+                  <Link
+                    key={section.href}
+                    href={section.href}
+                    className="rounded-lg border border-border/60 bg-background/60 p-3 text-sm transition-colors hover:border-primary/30 hover:bg-accent/40"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-md bg-primary/10 p-2 text-primary">
+                        <section.icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium">{section.title}</span>
+                          <span className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+                            {section.surfaceCount}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                          {section.description}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            <Separator className="bg-border/50" />
+
             <section>
               <div className="flex items-center gap-2 mb-3 text-sm font-medium text-muted-foreground">
                 <Star className="h-4 w-4" />
@@ -80,9 +126,11 @@ export function RightPanel() {
                   watchlistData.map((item) => {
                     const isUp = item.change >= 0;
                     return (
-                      <div
+                      <Link
                         key={item.symbol}
-                        className="flex items-center justify-between p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer"
+                        href={`/ticker/${encodeURIComponent(item.symbol)}`}
+                        aria-label={`Open ${item.symbol} ticker details`}
+                        className="flex items-center justify-between rounded-md p-2 transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
                       >
                         <span className="font-semibold text-sm">{item.symbol}</span>
                         <div className="flex items-center gap-3">
@@ -101,7 +149,7 @@ export function RightPanel() {
                             {isUp ? "+" : ""}{item.changesPercentage?.toFixed(2)}%
                           </span>
                         </div>
-                      </div>
+                      </Link>
                     );
                   })
                 )}
@@ -110,7 +158,6 @@ export function RightPanel() {
 
             <Separator className="bg-border/50" />
 
-            {/* Alerts Section */}
             <section>
               <div className="flex items-center gap-2 mb-3 text-sm font-medium text-muted-foreground">
                 <Bell className="h-4 w-4" />

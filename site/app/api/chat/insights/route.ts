@@ -37,7 +37,7 @@ export async function GET() {
 
     // Prepare portfolio summary for the AI
     const portfolioSummary = portfolioItems.map(item => 
-      `${item.amount_of_shares} shares of ${item.symbol} at $${item.price_purchased}`
+      `${item.quantity} shares of ${item.symbol} at $${item.average_price}`
     ).join(', ');
 
     const { object } = await generateObject({

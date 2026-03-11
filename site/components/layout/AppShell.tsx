@@ -22,7 +22,7 @@ export function AppShell({ children }: AppShellProps) {
         <TopBar />
         <main
           id="main-content"
-          className="flex-1 p-4 md:p-6 pb-20 md:pb-6 overflow-x-hidden animate-fade-in w-full mx-auto"
+          className="flex-1 w-full mx-auto overflow-x-hidden p-4 pb-[calc(theme(spacing.24)+env(safe-area-inset-bottom))] animate-fade-in md:p-6 md:pb-6"
         >
           {children}
         </main>

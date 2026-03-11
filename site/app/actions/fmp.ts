@@ -1,5 +1,7 @@
 "use server";
 
+import { z } from "zod";
+
 /**
  * @ai-context Server Actions for fetching data from Financial Modeling Prep (FMP) API.
  * @ai-security Uses server-side environment variables to keep API keys secure.
@@ -9,6 +11,15 @@ const BASE_URL = "https://financialmodelingprep.com/api/v3";
 
 const API_KEY = process.env.FMP_API_KEY;
 
+const symbolSchema = z.string().regex(/^[A-Z0-9.-]+$/);
+
+function validateSymbol(symbol: string) {
+  const result = symbolSchema.safeParse(symbol);
+  if (!result.success) {
+    throw new Error(`Invalid symbol format: ${symbol}`);
+  }
+  return result.data;
+}
 
 /**
  * Fetches real-time quote data for a given symbol.
@@ -17,7 +28,8 @@ export async function getQuote(symbol: string) {
   if (!API_KEY) return null;
   
   try {
-    const res = await fetch(`${BASE_URL}/quote/${symbol}?apikey=${API_KEY}`, {
+    const validSymbol = validateSymbol(symbol);
+    const res = await fetch(`${BASE_URL}/quote/${validSymbol}?apikey=${API_KEY}`, {
       next: { revalidate: 60 }, // Cache for 60 seconds
     });
     
@@ -35,13 +47,39 @@ export async function getQuote(symbol: string) {
 }
 
 /**
+ * Fetches live, non-cached quote data for a given symbol (used for trade execution).
+ */
+export async function getLiveQuote(symbol: string) {
+  if (!API_KEY) return null;
+  
+  try {
+    const validSymbol = validateSymbol(symbol);
+    const res = await fetch(`${BASE_URL}/quote/${validSymbol}?apikey=${API_KEY}`, {
+      cache: 'no-store', // No caching for live execution
+    });
+    
+    if (!res.ok) {
+      throw new Error(`Failed to fetch live quote for ${symbol}`);
+    }
+    
+    const data = await res.json();
+    if (!Array.isArray(data)) throw new Error(`Invalid response from FMP API: ${JSON.stringify(data)}`);
+    return data[0] || null;
+  } catch (error) {
+    console.error(`Error fetching live quote for ${symbol}:`, error);
+    throw error;
+  }
+}
+
+/**
  * Fetches real-time quote data for multiple symbols.
  */
 export async function getQuotes(symbols: string[]) {
   if (!API_KEY) return [];
   if (!symbols.length) return [];
   
-  const symbolString = symbols.join(',');
+  const validSymbols = symbols.map(validateSymbol);
+  const symbolString = validSymbols.join(',');
   try {
     const res = await fetch(`${BASE_URL}/quote/${symbolString}?apikey=${API_KEY}`, {
       next: { revalidate: 60 }, // Cache for 60 seconds
@@ -279,8 +317,9 @@ export async function getInstitutionalHoldings(symbol: string) {
   if (!API_KEY) return [];
 
   try {
+    const validSymbol = validateSymbol(symbol);
     const res = await fetch(
-      `${BASE_URL}/institutional-holder/${symbol}?apikey=${API_KEY}`,
+      `${BASE_URL}/institutional-holder/${validSymbol}?apikey=${API_KEY}`,
       { next: { revalidate: 86400 } }
     );
 
@@ -459,8 +498,9 @@ export async function getMarketNews(limit: number = 10, symbol?: string) {
   if (!API_KEY) return [];
 
   try {
-    const url = symbol 
-      ? `${BASE_URL}/stock_news?tickers=${symbol}&limit=${limit}&apikey=${API_KEY}`
+    const validSymbol = symbol ? validateSymbol(symbol) : undefined;
+    const url = validSymbol 
+      ? `${BASE_URL}/stock_news?tickers=${validSymbol}&limit=${limit}&apikey=${API_KEY}`
       : `${BASE_URL}/stock_news?limit=${limit}&apikey=${API_KEY}`;
       
     const res = await fetch(
@@ -510,7 +550,8 @@ export async function getCompanyProfile(symbol: string): Promise<{
   if (!API_KEY) return null;
 
   try {
-    const res = await fetch(`${BASE_URL}/profile/${symbol}?apikey=${API_KEY}`, {
+    const validSymbol = validateSymbol(symbol);
+    const res = await fetch(`${BASE_URL}/profile/${validSymbol}?apikey=${API_KEY}`, {
       next: { revalidate: 86400 },
     });
 
@@ -603,8 +644,9 @@ export async function getAnalystRatings(symbol: string): Promise<{
   if (!API_KEY) return null;
 
   try {
+    const validSymbol = validateSymbol(symbol);
     const res = await fetch(
-      `${BASE_URL}/analyst-stock-recommendations/${symbol}?apikey=${API_KEY}`,
+      `${BASE_URL}/analyst-stock-recommendations/${validSymbol}?apikey=${API_KEY}`,
       { next: { revalidate: 86400 } }
     );
 
@@ -644,8 +686,9 @@ export async function getPriceTarget(symbol: string): Promise<{
   if (!API_KEY) return null;
 
   try {
+    const validSymbol = validateSymbol(symbol);
     const res = await fetch(
-      `https://financialmodelingprep.com/api/v4/price-target-summary?symbol=${symbol}&apikey=${API_KEY}`,
+      `https://financialmodelingprep.com/api/v4/price-target-summary?symbol=${validSymbol}&apikey=${API_KEY}`,
       { next: { revalidate: 86400 } }
     );
 
@@ -677,7 +720,8 @@ export async function getHistoricalPrices(symbol: string) {
   if (!API_KEY) return [];
   
   try {
-    const res = await fetch(`${BASE_URL}/historical-price-full/${symbol}?apikey=${API_KEY}`, {
+    const validSymbol = validateSymbol(symbol);
+    const res = await fetch(`${BASE_URL}/historical-price-full/${validSymbol}?apikey=${API_KEY}`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
     });
     
@@ -745,7 +789,8 @@ export async function getIncomeStatement(symbol: string) {
   if (!API_KEY) return [];
   
   try {
-    const res = await fetch(`${BASE_URL}/income-statement/${symbol}?limit=4&apikey=${API_KEY}`, {
+    const validSymbol = validateSymbol(symbol);
+    const res = await fetch(`${BASE_URL}/income-statement/${validSymbol}?limit=4&apikey=${API_KEY}`, {
       next: { revalidate: 86400 }, // Cache for 24 hours
     });
     

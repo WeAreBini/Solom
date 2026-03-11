@@ -1,12 +1,21 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 
 export async function POST(request: Request) {
   try {
     // Verify webhook signature/secret here if applicable
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.FMP_WEBHOOK_SECRET}`) {
-      // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      // Commented out for placeholder purposes
+    const secret = process.env.FMP_WEBHOOK_SECRET;
+    
+    if (!secret) {
+      console.error('FMP_WEBHOOK_SECRET is not set');
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+
+    const expectedHeader = `Bearer ${secret}`;
+    
+    if (!authHeader || authHeader.length !== expectedHeader.length || !crypto.timingSafeEqual(Buffer.from(authHeader), Buffer.from(expectedHeader))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();

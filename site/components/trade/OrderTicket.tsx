@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,8 @@ interface OrderTicketProps {
 }
 
 export function OrderTicket({ symbol, currentPrice, buyingPower }: OrderTicketProps) {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const [orderAction, setOrderAction] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState<"market" | "limit">("market");
   const [shares, setShares] = useState<string>("");
@@ -36,17 +39,57 @@ export function OrderTicket({ symbol, currentPrice, buyingPower }: OrderTicketPr
       ? parsedShares * currentPrice
       : parsedShares * parsedLimitPrice;
 
-  const handleTrade = () => {
-    // Placeholder for trade execution logic
-    console.log("Executing trade:", {
-      symbol,
-      action: orderAction,
-      type: orderType,
-      shares: parsedShares,
-      price: orderType === "market" ? currentPrice : parsedLimitPrice,
-      total: estimatedCost,
-    });
-    toast.success(`Paper trade executed: ${orderAction.toUpperCase()} ${parsedShares} shares of ${symbol}`);
+  const handleTrade = async () => {
+    if (parsedShares <= 0) {
+      toast.error("Please enter a valid number of shares.");
+      return;
+    }
+
+    const price = orderType === "market" ? currentPrice : parsedLimitPrice;
+
+    if (orderAction === "buy" && estimatedCost > buyingPower) {
+      toast.error("Insufficient buying power.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/trade/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          symbol,
+          quantity: parsedShares,
+          type: orderAction,
+          price,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to execute trade");
+      }
+
+      toast.success(`Paper trade executed: ${orderAction.toUpperCase()} ${parsedShares} shares of ${symbol}`);
+      
+      // Reset form
+      setShares("");
+      if (orderType === "limit") {
+        setLimitPrice(currentPrice.toString());
+      }
+      
+      // Refresh page data
+      router.refresh();
+    } catch (error: unknown) {
+      console.error("Trade execution error:", error);
+      const errorMessage = error instanceof Error ? error.message : "An error occurred while executing the trade.";
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -153,9 +196,9 @@ export function OrderTicket({ symbol, currentPrice, buyingPower }: OrderTicketPr
               : "bg-rose-500 hover:bg-rose-600 text-white"
           )}
           onClick={handleTrade}
-          disabled={parsedShares <= 0 || (orderAction === "buy" && estimatedCost > buyingPower)}
+          disabled={isLoading || parsedShares <= 0 || (orderAction === "buy" && estimatedCost > buyingPower)}
         >
-          {orderAction === "buy" ? "Review Buy Order" : "Review Sell Order"}
+          {isLoading ? "Processing..." : orderAction === "buy" ? "Review Buy Order" : "Review Sell Order"}
         </Button>
       </CardFooter>
     </Card>
