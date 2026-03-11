@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+/**
+ * @ai-context Dashboard command palette for stock lookup and route switching.
+ * Keeps quick navigation aligned with the current dashboard IA instead of stale tab routes.
+ * @ai-related components/dashboard/navigation.ts, app/dashboard/page.tsx
+ */
+
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -11,20 +17,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useStockSearch } from "@/lib/solom-api";
-import { TrendingUp, Search, Star, BarChart3, Settings, Newspaper, Clock, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Search, Home, Loader2, TrendingUp } from "lucide-react";
+import { dashboardNavItems } from "@/components/dashboard/navigation";
 
 interface CommandPaletteProps {
   onStockSelect?: (symbol: string) => void;
 }
 
 const navItems = [
-  { icon: TrendingUp, label: "Markets Overview", href: "/dashboard" },
-  { icon: Search, label: "Stock Search", href: "/dashboard?tab=search" },
-  { icon: Star, label: "Watchlist", href: "/dashboard?tab=watchlist" },
-  { icon: BarChart3, label: "Analytics", href: "/dashboard?tab=analytics" },
-  { icon: Newspaper, label: "News", href: "/dashboard?tab=news" },
-  { icon: Settings, label: "Settings", href: "/settings" },
+  { icon: Home, label: "Home", href: "/" },
+  ...dashboardNavItems.map((item) => ({
+    icon: item.icon,
+    label: item.title,
+    href: item.href,
+  })),
 ];
 
 export function CommandPalette({ onStockSelect }: CommandPaletteProps) {
