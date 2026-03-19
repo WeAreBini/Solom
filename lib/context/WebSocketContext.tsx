@@ -28,6 +28,31 @@ const WS_CONFIG = {
   connectionTimeout: 10000, // 10 seconds to connect
 };
 
+function getAllowedWebSocketUrl(rawUrl: string): string {
+  if (!rawUrl || typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    const resolvedUrl = new URL(rawUrl, window.location.origin);
+    const pageProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+
+    if (resolvedUrl.protocol !== "ws:" && resolvedUrl.protocol !== "wss:") {
+      return "";
+    }
+
+    // Keep browser connections aligned with current origin/CSP. Off-origin sockets
+    // should fall back to polling unless CSP is explicitly widened for them.
+    if (resolvedUrl.origin !== `${pageProtocol}//${window.location.host}`) {
+      return "";
+    }
+
+    return resolvedUrl.toString();
+  } catch {
+    return "";
+  }
+}
+
 // Context interface
 interface WebSocketContextValue {
   connectionState: ConnectionState;
@@ -51,6 +76,8 @@ export function WebSocketProvider({
   children,
   enabled = true,
 }: WebSocketProviderProps) {
+  const websocketUrl = useMemo(() => getAllowedWebSocketUrl(WS_CONFIG.baseUrl), []);
+
   // State
   const [connectionState, setConnectionState] = useState<ConnectionState>({
     status: "disconnected",
@@ -102,7 +129,7 @@ export function WebSocketProvider({
     }
 
     // If we don't have a WebSocket URL, stay disconnected (will use polling fallback)
-    if (!WS_CONFIG.baseUrl) {
+    if (!websocketUrl) {
       setConnectionState({
         status: "disconnected",
         lastConnected: null,
@@ -119,7 +146,7 @@ export function WebSocketProvider({
     }));
 
     try {
-      const ws = new WebSocket(WS_CONFIG.baseUrl);
+      const ws = new WebSocket(websocketUrl);
       wsRef.current = ws;
 
       // Connection timeout
@@ -243,7 +270,7 @@ export function WebSocketProvider({
         error: error instanceof Error ? error : new Error("Failed to connect"),
       });
     }
-  }, [enabled, connectionState.reconnectAttempts, clearTimers]);
+  }, [enabled, connectionState.reconnectAttempts, clearTimers, websocketUrl]);
 
   // Disconnect from WebSocket
   const disconnect = useCallback(() => {
@@ -319,7 +346,7 @@ export function WebSocketProvider({
   useEffect(() => {
     isUnmountedRef.current = false;
 
-    if (enabled && WS_CONFIG.baseUrl) {
+    if (enabled && websocketUrl) {
       connect();
     }
 
@@ -327,7 +354,7 @@ export function WebSocketProvider({
       isUnmountedRef.current = true;
       disconnect();
     };
-  }, [enabled, connect, disconnect]);
+  }, [enabled, connect, disconnect, websocketUrl]);
 
   // Memoized context value
   const value = useMemo<WebSocketContextValue>(

@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [selectedStock, setSelectedStock] = useState<string | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string>("");
   const initializedRef = useRef(false);
 
   // Load watchlist from local storage on mount
@@ -43,6 +44,7 @@ export default function DashboardPage() {
           // Invalid data, ignore
         }
       }
+      setLastUpdated(new Date().toLocaleTimeString());
       setMounted(true);
     }
   }, []);
@@ -116,8 +118,8 @@ export default function DashboardPage() {
               </Badge>
             </div>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <span>
-                Last updated: {new Date().toLocaleTimeString()}
+              <span suppressHydrationWarning>
+                Last updated: {lastUpdated || "--:--:--"}
               </span>
               <Button variant="ghost" size="icon" className="h-7 w-7">
                 <RefreshCw className="h-4 w-4" />

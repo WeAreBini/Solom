@@ -75,6 +75,9 @@ async function fetchApi<T>(endpoint: string): Promise<T> {
   const json = await response.json();
   if (json && typeof json === 'object' && 'success' in json) {
     if (!json.success) {
+      if ('data' in json && json.data !== undefined && json.data !== null) {
+        return json.data as T;
+      }
       throw new Error(json.error || `API error: ${response.status}`);
     }
     return json.data as T;
