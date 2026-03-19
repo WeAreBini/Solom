@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useStockSearch } from "@/lib/solom-api";
+import { useStockSearch } from "@/lib/api";
 import { TrendingUp, Search, Star, BarChart3, Settings, Newspaper, Clock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 

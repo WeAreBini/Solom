@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMarketMovers } from "@/lib/solom-api";
+import { useMarketMovers } from "@/lib/api";
 import { TrendingUp, TrendingDown, Flame, Snowflake } from "lucide-react";
 
 export function MarketMovers() {

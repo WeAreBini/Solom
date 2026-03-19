@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useStockQuote } from "@/lib/solom-api";
+import { useStockQuote } from "@/lib/api";
 import { TrendingUp, TrendingDown, Star, Trash2, Loader2, RefreshCw } from "lucide-react";
 
 interface WatchlistProps {
