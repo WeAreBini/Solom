@@ -72,7 +72,7 @@ interface MarketMoversResponse {
 
 // API fetch function with error handling
 async function fetchSolomApi<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
-  const url = new URL(`${SOLOM_API_URL}${endpoint}`);
+  const url = new URL(`${SOLOM_DATA_SERVICE_URL}${endpoint}`);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       url.searchParams.append(key, value);
