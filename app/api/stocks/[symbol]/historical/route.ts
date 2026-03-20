@@ -165,8 +165,9 @@ export async function GET(
     });
 
     if (prices.length === 0) {
-      // Depending on actual usage, might just return an empty array without an error
-      // But we will return an empty historicalData to prevent crashes
+      // Return empty data rather than silent failure - the client should handle this
+      // and potentially fall back to a different data source
+      console.warn(`No historical data found for ${cleanSymbol} interval=${interval}`);
     }
 
     const historicalData: HistoricalDataPoint[] = prices.map(p => ({

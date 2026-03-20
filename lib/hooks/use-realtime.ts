@@ -115,11 +115,16 @@ export function useWebSocket<T>(
         // Stop heartbeat
         if (heartbeatRef.current) {
           clearInterval(heartbeatRef.current);
+          heartbeatRef.current = null;
         }
 
         // Auto reconnect
         if (autoReconnect && reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current++;
+          // Clear any existing timeout before setting a new one
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+          }
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
           }, reconnectDelay * reconnectAttemptsRef.current);
@@ -280,7 +285,7 @@ export function useRealtimeMarketData(
   symbols: string[],
   config: RealtimeConfig = {}
 ) {
-  const { useMockData = true } = config;
+  const { useMockData = false } = config;
   
   const [marketData, setMarketData] = useState<SymbolMap>(new Map());
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);

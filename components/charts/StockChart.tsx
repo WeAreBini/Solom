@@ -382,7 +382,7 @@ export function StockChart({
       }
       smaSeriesRef.current = null;
     }
-  }, [showSMA, indicators.sma, smaPeriod, convertIndicatorToLineData]);
+  }, [showSMA, indicators.sma, smaPeriod, convertIndicatorToLineData, chartType]);
 
   // Handle EMA indicator
   useEffect(() => {
@@ -406,7 +406,7 @@ export function StockChart({
       }
       emaSeriesRef.current = null;
     }
-  }, [showEMA, indicators.ema, emaPeriod, convertIndicatorToLineData]);
+  }, [showEMA, indicators.ema, emaPeriod, convertIndicatorToLineData, chartType]);
 
   // Handle Bollinger Bands indicator
   useEffect(() => {
@@ -474,7 +474,7 @@ export function StockChart({
         bollingerLowerRef.current = null;
       }
     }
-  }, [showBollingerBands, indicators.bollingerBands, bollingerPeriod]);
+  }, [showBollingerBands, indicators.bollingerBands, bollingerPeriod, chartType]);
 
   // Initialize RSI sub-chart
   useEffect(() => {
@@ -544,7 +544,7 @@ export function StockChart({
       rsiChart.remove();
       rsiChartRef.current = null;
     };
-  }, [showRSI, indicators.rsi, rsiPeriod, convertIndicatorToLineData]);
+  }, [showRSI, indicators.rsi, rsiPeriod, convertIndicatorToLineData, chartType]);
 
   // Initialize MACD sub-chart
   useEffect(() => {
@@ -646,7 +646,7 @@ export function StockChart({
       macdChart.remove();
       macdChartRef.current = null;
     };
-  }, [showMACD, indicators.macd]);
+  }, [showMACD, indicators.macd, chartType]);
 
   // Handle real-time price updates
   useEffect(() => {

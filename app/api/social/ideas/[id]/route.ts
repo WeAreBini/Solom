@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import type { UpdateIdeaBody } from '@/lib/types/social';
+import { auth } from '@clerk/nextjs/server';
 
 export const dynamic = 'force-dynamic';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
+}
+
+/**
+ * Get the authenticated user ID from Clerk, or null if not authenticated.
+ * This replaces the insecure x-user-id header approach.
+ */
+async function getAuthenticatedUserId(): Promise<string | null> {
+  try {
+    const { userId } = await auth();
+    return userId;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -19,7 +33,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const currentUserId = request.headers.get('x-user-id');
+    const currentUserId = await getAuthenticatedUserId();
 
     const idea = await prisma.tradeIdea.findUnique({
       where: { id },
@@ -135,7 +149,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const currentUserId = request.headers.get('x-user-id');
+    const currentUserId = await getAuthenticatedUserId();
 
     if (!currentUserId) {
       return NextResponse.json(
@@ -239,7 +253,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const currentUserId = request.headers.get('x-user-id');
+    const currentUserId = await getAuthenticatedUserId();
 
     if (!currentUserId) {
       return NextResponse.json(
